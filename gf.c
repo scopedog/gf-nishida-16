@@ -80,7 +80,7 @@ GF16init(void)
 	
 	// Allocate memory 
 	GF16memL = (uint16_t *)malloc(sizeof(uint16_t) * GF16_SIZE * 4);
-	GF16memH = GF16memL + GF16_SIZE - 1; // Second half
+	GF16memH = GF16memL + GF16_SIZE - 1; // Second quarter
 	GF16memIdx = (int *)malloc(sizeof(int) * GF16_SIZE);
 	GF16memL[0] = t = 1;
 
