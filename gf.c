@@ -94,7 +94,7 @@ GF16init(void)
 	GF16memIdx[0] = (GF16_SIZE << 1) - 1;
 	GF16memIdx[1] = 0;
 
-	// Copy first quarter of GF16memL to quarter half
+	// Copy first quarter of GF16memL to second quarter
 	memcpy(GF16memH, GF16memL, sizeof(uint16_t) * (GF16_SIZE - 1));
 
 	// Fill remaining space after GF16memH with zero
