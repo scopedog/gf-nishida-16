@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /****************************************************************************
 
 	This program provides simple and fast arithmetic functions
-	in GF(2^16) that base on memory lookups.
+	in GF(2^16) based on memory lookups.
 	The size of memory allocated for GF(2^16) is 768kB.
 	GF16mul() and GF16div() are difined in gf.h for speedup. 
 
