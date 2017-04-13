@@ -2,10 +2,12 @@ Just copy gf.c and gf.h to your program directory.
 
 Initialization (call before all GF16 arithmetic functions):
 	GF16init();
-Multiplication (a * b):
+	
+For multiplication c = a * b, use
 	uint16_t a, b, c;
 	c = GF16mul(a, b);
-Division (a / b):
+	
+For division c = a / b, use
 	uint16_t a, b, c;
 	c = GF16div(a, b);
 
