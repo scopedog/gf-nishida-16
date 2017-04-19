@@ -11,4 +11,34 @@ For division c = a / b, use
 	uint16_t a, b, c;
 	c = GF16div(a, b);
 
+For repeated computation like:
+	uint16_t a, x[];
+	for (i = 0; i < N; i++) {
+		b = GFmul(a, x[i]);
+	}
+where 'a' is static and 'x' is an array,
+you can speed up by a region technique.
+Change above code as follows:
+	uint16_t a, x[], *gf_a, *_x;
+	gf_a = GF16memL + GF16memIdx[a];
+	_x = x;
+	for (i = 0; i < N; i++) {
+		b = gf_a[GF16memIdx[*_x]];
+		_x++;
+	}
+This will halve the computation time.
+For division like:
+	uint16_t a, x[];
+	for (i = 0; i < N; i++) {
+		b = GFdiv(x[i], a); // Note!! Not GFdiv(a, x[i])
+	}
+use
+	uint16_t a, x[], *gf_a, *_x;
+	gf_a = GF16memH - GF16memIdx[a];
+	_x = x;
+	for (i = 0; i < N; i++) {
+		b = gf_a[GF16memIdx[*_x]];
+		_x++;
+	}
+
 See also gf-bench.c. 
