@@ -54,4 +54,6 @@ do
 		_x++;
 	}
 
-See also gf-bench.c. 
+See also gf-bench.c under gf-bench.
+gf-bench.c at gf-bench/{multiplication,division}/gf-nishida-region-16/
+will be helpful for understanding the region technique.
