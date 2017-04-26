@@ -7,6 +7,7 @@ Just copy them to your directory and compile your programs with them.
 
 Please see our technical paper gf-nishida-16.pdf (English) or 
 gf-nishida-16-ja.pdf (Japanese) for the further details.
+The programs used for the benchmark are located under gf-bench/.
 
 CAUTION!! Never use b = 0 for GF16div(a, b) because it causes segmentation
 violation.
