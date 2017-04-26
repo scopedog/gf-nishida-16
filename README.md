@@ -6,7 +6,7 @@ The only programs you need are gf.c and gf.h.
 Just copy them to your directory and compile your programs with them.
 
 Please see our technical paper gf-nishida-16.pdf (English) or 
-gf-nishida-16-ja.pdf (Japanese) for further details of gf-nishida-16.
+gf-nishida-16-ja.pdf (Japanese) for the further details.
 
 CAUTION!! Never use b = 0 for GF16div(a, b) because it causes segmentation
 violation.
