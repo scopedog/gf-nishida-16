@@ -1,3 +1,7 @@
+# This is for compiling gf-bench.c that measures the computation
+# time taken by multiplication and division with gf-nishida-16.
+# mt19937-64.c is used only for generating random integers.
+
 CC		= cc
 EXECUTABLE	= gf-bench
 MAIN		= gf-bench.c
