@@ -54,7 +54,8 @@ main(int argc, char **argv)
 		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
 			// Calculate in GF
 			// To avoid elimination by cc's -O2 option, input result into a[j]
-			a[j] = gf_a[b[j]]; // 16bit
+			//a[j] = gf_a[GF16memIdx[b[j]]]; // 16bit
+			a[j] = *(gf_a + GF16memIdx[b[j]]); // 16bit
 		}
 	}
 
