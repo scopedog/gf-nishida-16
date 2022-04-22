@@ -16,7 +16,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-#include "ff_2_163.h"
+#include "ff_2_64.h"
 
 #define CHECKN 100000
 
@@ -50,9 +50,9 @@ int main () {
   
   printf("Checking product:\n");
   printf("\tbitwise:\n");
-  for (i=0; i<163; i++) {
+  for (i=0; i<64; i++) {
     ff_set_bit(a,i);    
-    for (j=0; j<163; j++) {
+    for (j=0; j<64; j++) {
       ff_set_bit(b,j);
       ff_mul_rlcomb(a,b,c);
       ff_mul_lrcomb(a,b,d);
@@ -77,7 +77,7 @@ int main () {
   
   printf("Checking squaring:\n");
   printf("\tbitwise:\n");
-  for (i=0; i<163; i++) {
+  for (i=0; i<64; i++) {
     ff_set_bit(a,i);
     ff_mul(a,a,b);
     ff_square(a,c);
@@ -94,7 +94,7 @@ int main () {
 
   printf("Checking inversion:\n");
   printf("\tbitwise:\n");
-  for (i=0; i<163; i++) {
+  for (i=0; i<64; i++) {
     ff_set_bit(a,i);
     ff_inv(a,b);
     ff_mul(a,b,c);
@@ -113,9 +113,9 @@ int main () {
 
   printf("Checking division:\n");
   printf("\tbitwise:\n");
-  for (i=0; i<163; i++) {
+  for (i=0; i<64; i++) {
     ff_set_bit(a,i);
-    for (j=0; j<163; j++) {
+    for (j=0; j<64; j++) {
       ff_set_bit(b,j);
       ff_div(a,b,c);
       ff_mul(b,c,d);
