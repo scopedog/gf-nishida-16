@@ -48,7 +48,7 @@ main(int argc, char **argv)
 	// Use regular region technique (faster than GF16mul)
 	for (i = 0; i < REPEAT; i++) {
 		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
-			// Calculate in GF
+			// Two step look up
 			// To avoid elimination by cc's -O2 option,
 			// input result into c[j]
 			c[j] = gf_a[GF16memIdx[b[j]]];
@@ -74,9 +74,7 @@ main(int argc, char **argv)
 	// Supposed to be even faster
 	for (i = 0; i < REPEAT; i++) {
 		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
-			// Calculate in GF
-			// To avoid elimination by cc's -O2 option,
-			// input result into c[j]
+			// One step look up
 			d[j] = gf_a[b[j]];
 		}
 	}
