@@ -1,13 +1,13 @@
 CC		= cc
 EXECUTABLE	= gf-bench
 MAIN		= gf-bench.c
-INTERFACES	= aes-gcm.c mt19937-64.c
+INTERFACES	= aes-gcm.c ../../common/mt19937-64.c
 SRCS		= $(MAIN) $(INTERFACES)
 OBJS		= $(SRCS:.c=.o)
 LIBS		= 
 LIBPATH		= 
-INCPATH		= 
-CFLAGS		= -Wall -O2 -g -maes
+INCPATH		= -I../../common/
+CFLAGS		= -Wall -Ofast $(INCPATH)
 
 ##################################################################
 
