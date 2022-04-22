@@ -1,15 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
+#include <time.h>
 #include <sys/time.h>
+#include "common.h"
 #include "gf.h"
 #include "mt64.h"
-
-// Space allocation
-#define SPACE	640000
-
-// # of repeats
-#define REPEAT	200	// Actual repeat times is SPACE * REPEAT 
 
 // Main
 int
@@ -18,41 +15,39 @@ main(int argc, char **argv)
 	// Variables
 	int		i, j;
 	struct timeval	start, end;
-	uint16_t	*a, *b, _a; // 16bit
+	uint16_t	a, *b, *c;
 	uint64_t	*r;
-	uint64_t	rand_init[4] = {UINT64_C(0xfd308), UINT64_C(0x65ab8),
-				UINT64_C(0x931cd54), UINT64_C(0x9475ea2)};
 
 	// Initialize GF
 	GF16init(); // 16bit
 
-	// Allocate
-	if ((a = (uint16_t *)malloc(SPACE * 2)) == NULL) { // 16bit
+	// Allocate b and c
+	if ((b = (uint16_t *)malloc(SPACE * 2)) == NULL) {
 		perror("malloc");
 		exit(1);
 	}
-	b = a + (SPACE / sizeof(uint16_t)); // 16bit
+	c = b + (SPACE / sizeof(uint16_t));
 
 	// Initialize random generator
-	init_by_array64(rand_init, 4);
+	init_genrand64(time(NULL));
 
 	// Input random numbers to a, b
-	j = SPACE * 2 / sizeof(uint64_t);
-	r = (uint64_t *)a;
-	for (i = 0; i < j; i++) {
+	a = (uint16_t)(genrand64_int64() & 0xffff);
+	r = (uint64_t *)b;
+	for (i = 0; i < SPACE / sizeof(uint64_t); i++) {
 		r[i] = genrand64_int64();
 	}
-	_a = a[0];
 
 	// Start measuring elapsed time
 	gettimeofday(&start, NULL); // Get start time
 
-	// Repeat calc in GF
+	// Use GF16mul to calculate a * b[j]
 	for (i = 0; i < REPEAT; i++) {
 		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
 			// Calculate in GF
-			// To avoid elimination by cc's -O2 option, input result into a[j]
-			a[j] = GF16mul(_a, b[j]); // 16bit
+			// To avoid elimination by cc's -O2 option,
+			// input result into c[j]
+			c[j] = GF16mul(a, b[j]);
 		}
 	}
 
@@ -60,5 +55,8 @@ main(int argc, char **argv)
 	gettimeofday(&end, NULL);
 
 	// Print result
-	printf("%ld\n", ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec)));
+	printf("%ld\n", ((end.tv_sec * 1000000 + end.tv_usec) -
+		(start.tv_sec * 1000000 + start.tv_usec)));
+
+	exit(0);
 }
