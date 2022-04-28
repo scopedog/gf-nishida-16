@@ -15,7 +15,7 @@ main(int argc, char **argv)
 	// Variables
 	int		i, j;
 	struct timeval	start, end;
-	uint16_t	a, *b, *c, *d, *gf_a;
+	uint16_t	a, *b, *c, *d, *gf_a, *gf_a_l, *gf_a_h;
 	uint64_t	*r;
 
 	// Initialize GF
@@ -63,7 +63,7 @@ main(int argc, char **argv)
 		(start.tv_sec * 1000000 + start.tv_usec)));
 
 	// Create region table for a
-	if ((gf_a = GF16crtRegionTbl(a, 0)) == NULL) {
+	if ((gf_a = GF16crtRegTbl(a, 0)) == NULL) {
 		exit(1);
 	}
 
@@ -76,6 +76,8 @@ main(int argc, char **argv)
 		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
 			// One step look up
 			d[j] = gf_a[b[j]];
+			// Or use:
+			//d[j] = GF16RT(gf_a, b[j]);
 		}
 	}
 
@@ -86,13 +88,52 @@ main(int argc, char **argv)
 	printf("Special: %ld\n", ((end.tv_sec * 1000000 + end.tv_usec) -
 		(start.tv_sec * 1000000 + start.tv_usec)));
 
-	// Don't forget this if you called GF16crtRegionTbl()
+	// Don't forget this if you called GF16crtRegTbl()
 	free(gf_a);
 
 	// Compare c and d, they are supposed to be same
 	if (memcmp(c, d, SPACE)) {
 		fprintf(stderr, "Error: E-mail me (nishida at asusa.net) "
-			"if this happens.\n");
+			"if this happened.\n");
+		exit(1);
+	}
+
+	// Create 2 * 512 Byte region tables for a
+	if ((gf_a_l = GF16crtSpltRegTbl(a, 0)) == NULL) {
+		exit(1);
+	}
+	gf_a_h = gf_a_l + 256; // Don't forget this
+
+	// Start measuring elapsed time
+	gettimeofday(&start, NULL); // Get start time
+
+	// Use extreme region technique not described in paper
+	// Supposed to be even faster
+	uint16_t	bj;
+	for (i = 0; i < REPEAT; i++) {
+		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
+			bj = b[j];
+			d[j] = gf_a_h[bj >> 8] ^ gf_a_l[bj & 0xff];
+			// Or use:
+			//d[j] = GF16SRT(gf_a_l, gf_a_h, bj);
+		}
+	}
+
+	// Get end time
+	gettimeofday(&end, NULL);
+
+	// Print result
+	printf("Extreme: %ld\n", ((end.tv_sec * 1000000 + end.tv_usec) -
+		(start.tv_sec * 1000000 + start.tv_usec)));
+
+	// Don't forget this if you called GF16GF16crtSpltRegTbl()
+	// No need to free gf_a_h because gf_a_h = gf_a_l + 256
+	free(gf_a_l);
+
+	// Compare c and d, they are supposed to be same
+	if (memcmp(c, d, SPACE)) {
+		fprintf(stderr, "Error: E-mail me (nishida at asusa.net) "
+			"if this happened.\n");
 		exit(1);
 	}
 
