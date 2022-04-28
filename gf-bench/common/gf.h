@@ -5,14 +5,16 @@
 
 /****************************************************************************
 
-	Simple (and fast?) calculation functions in GF(2^8) and GF(2^16)
-	that use memory lookup.
-	GF(2^8) uses 64kB and GF(2^16) uses 256kB.
+	Simple (and fast?) multiplication and division functions in
+	GF(2^16) that use memory lookup(s).
+	Memory consumptions are as follows:
+		GF16mul(), GF16div(): 768kB
+		GF16crtRegTbl: 128kB (may fit L2 cache)
+		GF16crtSpltRegTbl: 1kB (may fit L1 cache)
 
-	CAUTION!! Never use b = 0 for GF16div(a, b).
-	GFdiv16(a, 0) outputs a wrong value.
-	This is because I have eliminated "(!a || !b) ? 0 : ...." code
-	in order to achieve faster computation.
+	CAUTION!! Never use b = 0 for disvision (e.g. GF16div(a, b))
+	as it will output a wrong value.
+	For speedup, we don't check if a, b == 0.
 
 					Hiroshi Nishida
         
@@ -21,6 +23,22 @@
 /************************************************************
 	Definitions
 ************************************************************/
+
+// To achieve fast computation, we do not check if a, b == 0
+// CAUTION: DO NOT USE b = 0 for GF16div(a, b). IT DOES NOT WORK CORRECTLY.
+#define	GF16mul(a, b)	(GF16memL[GF16memIdx[(a)] + GF16memIdx[(b)]])
+#define	GF16div(a, b)	(GF16memH[GF16memIdx[(a)] - GF16memIdx[(b)]])
+
+// Some macros for simplification 
+#define GF16crtRegTblMul(a)	GF16crtRegTbl(a, 0)
+#define GF16crtRegTblDivL(a)	GF16crtRegTbl(a, 1)
+#define GF16crtRegTblDivR(a)	GF16crtRegTbl(a, 2)
+#define GF16crtSpltRegTblMul(a)		GF16crtSpltRegTbl(a, 0)
+#define GF16crtSpltRegTblDivL(a)	GF16crtSpltRegTbl(a, 1)
+#define GF16crtSpltRegTblDivR(a)	GF16crtSpltRegTbl(a, 2)
+
+#define GF16RT(gf_a, x)		gf_a[(x)]
+#define GF16SRT(gf_a_l, gf_a_h, x)	gf_a_h[(x) >> 8] ^ gf_a_l[(x) & 0xff]
 
 /************************************************************
 	Variables
@@ -44,20 +62,9 @@ extern int	*GF16memIdx;
 	Functions
 ************************************************************/
 
-
 // 16bit
 void		GF16init(void); 
-uint16_t	*GF16crtRegionTbl(uint16_t, int);
-
-#if 1	// To achieve fast computation, we do not check if a, b == 0
-	// CAUTION: DO NOT USE b = 0 for GF16div(a, b).
-	// IT DOES NOT WORK CORRECTLY.
-#define	GF16mul(a, b)	(GF16memL[GF16memIdx[(a)] + GF16memIdx[(b)]])
-#define	GF16div(a, b)	(GF16memH[GF16memIdx[(a)] - GF16memIdx[(b)]])
-#else	// If you'd like to get correct GF values, use below
-#define	GF16mul(a, b)	((!a || !b) ? 0 : GF16memL[GF16memIdx[(a)] + GF16memIdx[(b)]])
-#define	GF16div(a, b)	((!a || !b) ? 0 : GF16memH[GF16memIdx[(a)] - GF16memIdx[(b)]])
-#endif
-
+uint16_t	*GF16crtRegTbl(uint16_t, int);
+uint16_t	*GF16crtSpltRegTbl(uint16_t, int);
 
 #endif // _GF_H_
