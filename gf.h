@@ -66,5 +66,6 @@ extern int	*GF16memIdx;
 void		GF16init(void); 
 uint16_t	*GF16crtRegTbl(uint16_t, int);
 uint16_t	*GF16crtSpltRegTbl(uint16_t, int);
+uint8_t		*GF16crt4bitRegTbl(uint16_t, int);
 
 #endif // _GF_H_
