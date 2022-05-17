@@ -1,31 +1,13 @@
-CC		= cc
-EXECUTABLE	= gf-bench
-MAIN		= gf-bench.c
-INTERFACES	= ../../common/gf.c ../../common/mt19937-64.c
-SRCS		= $(MAIN) $(INTERFACES)
-OBJS		= $(SRCS:.c=.o)
-LIBS		= 
-LIBPATH		= 
-INCPATH		= -I../../common/
-CFLAGS		= -Wall -Ofast $(INCPATH)
+ARCH	!= uname -m
 
-##################################################################
-
-.c.o:
-	$(CC) -c $(CFLAGS) $< -o $@
-
-$(EXECUTABLE) : $(OBJS)
-	$(CC) -o $@ $(OBJS) $(LIBPATH) $(LIBS)
-
-all : $(EXECUTABLE)
+all:
+	make -f Makefile.$(ARCH)
 
 clean:
-	rm -f *.o *.core $(EXECUTABLE) $(LIBRARAY)
+	make -f Makefile.$(ARCH) $@
 
 depend:
-	mkdep $(CFLAGS) $(SRCS)
+	make -f Makefile.$(ARCH) $@
 
-bench : $(EXECUTABLE)
-	@basename `pwd`
-	@./$(EXECUTABLE)
-
+bench:
+	make -f Makefile.$(ARCH) $@
