@@ -1,6 +1,6 @@
 This library provides simple and fast arithmetic functions (macros) in GF(2^16)
 based on table lookup.
-The size of memory allocated for the basic lookup tables is only 655kB.
+The size of memory allocated for the basic lookup tables is only 768kB.
 The only programs you need are gf.c and gf.h; copy them to your directory and
 compile your programs with them.
 
