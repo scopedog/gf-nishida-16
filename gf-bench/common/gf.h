@@ -5,12 +5,13 @@
 
 /****************************************************************************
 
-	Simple (and fast?) multiplication and division functions in
-	GF(2^16) that use memory lookup(s).
-	Memory consumptions are as follows:
+	Simple and fast multiplication and division functions in GF(2^16)
+	based on table lookup(s).
+	Memory consumption for the tables is as follows:
 		GF16mul(), GF16div(): 768kB
 		GF16crtRegTbl: 128kB (may fit L2 cache)
 		GF16crtSpltRegTbl: 1kB (may fit L1 cache)
+		GF16crt4bitRegTbl: 128B (for SIMD)
 
 	CAUTION!! Never use b = 0 for disvision (e.g. GF16div(a, b))
 	as it will output a wrong value.
@@ -37,8 +38,8 @@
 #define GF16crtSpltRegTblDivL(a)	GF16crtSpltRegTbl(a, 1)
 #define GF16crtSpltRegTblDivR(a)	GF16crtSpltRegTbl(a, 2)
 
-#define GF16RT(gf_a, x)		gf_a[(x)]
-#define GF16SRT(gf_a_l, gf_a_h, x)	gf_a_h[(x) >> 8] ^ gf_a_l[(x) & 0xff]
+#define GF16LkupRT(gf_a, x)		gf_a[(x)]
+#define GF16LkupSRT(gf_a_l, gf_a_h, x)	gf_a_h[(x) >> 8] ^ gf_a_l[(x) & 0xff]
 
 /************************************************************
 	Variables
@@ -66,5 +67,6 @@ extern int	*GF16memIdx;
 void		GF16init(void); 
 uint16_t	*GF16crtRegTbl(uint16_t, int);
 uint16_t	*GF16crtSpltRegTbl(uint16_t, int);
+uint8_t		*GF16crt4bitRegTbl(uint16_t, int);
 
 #endif // _GF_H_

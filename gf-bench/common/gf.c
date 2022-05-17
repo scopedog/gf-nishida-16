@@ -1,14 +1,38 @@
-/*
- *	All rights revserved by ASUSA Corporation and ASJ Inc.
- *	Copying any part of this program is strictly prohibited.
- *	Author: Hiroshi Nishida
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 2016, 2022
+ *      ASUSA Corporation.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 /****************************************************************************
 
-	This program provides simple (and fast?) calculation functions
-	in GF(2^16) that use memory lookup.
-	The size of memory allocated for GF(2^16) is 512kB.
+	This program provides simple and fast calculation functions/macros
+	in GF(2^16) based on table lookup.
 	GF16mul() and GF16div() are difined in gf.h for speedup. 
 
 	CAUTION!! Never use b = 0 for all division functions div(a, b)
@@ -102,6 +126,7 @@ GF16init(void)
 //        uint16_t *gf_a = GF16crtRegTbl(a, 0);
 //        for (i = 0; i < N; i++) {
 //            y[i] = gf_a[x[i]]; // This is equal to GFmul(a, x[i]);
+//            // Or use y[i] = GF16LkupRT(gf_a, x[i]);
 //        }
 //        free(gf_a);
 //
@@ -109,6 +134,7 @@ GF16init(void)
 //        uint16_t *gf_a = GF16crtRegTbl(a, 1);
 //        for (i = 0; i < N; i++) {
 //            y[i] = gf_a[x[i]]; // This is equal to GFdiv(a, x[i]);
+//            // Or use y[i] = GF16LkupRT(gf_a, x[i]);
 //        }
 //        free(gf_a);
 //
@@ -116,6 +142,7 @@ GF16init(void)
 //        uint16_t *gf_a = GF16crtRegTbl(a, 2);
 //        for (i = 0; i < N; i++) {
 //            y[i] = gf_a[x[i]]; // This is equal to GFdiv(x[i], a);
+//            // Or use y[i] = GF16LkupRT(gf_a, x[i]);
 //        }
 //        free(gf_a);
 //
@@ -196,7 +223,7 @@ GF16crtRegTbl(uint16_t a, int type)
 //        for (i = 0; i < N; i++) {
 //            xi = x[i];
 //            y[i] = gf_a_h[xi >> 8] ^ gf_a_l[xi & 0xff]; // = GFmul(a, x[i]);
-//            // Or use y[i] = GF16SRT(gf_a_l, gf_a_h, xi);
+//            // Or use y[i] = GF16LkupSRT(gf_a_l, gf_a_h, xi);
 //        }
 //        free(gf_a_l);
 //
@@ -207,7 +234,7 @@ GF16crtRegTbl(uint16_t a, int type)
 //        for (i = 0; i < N; i++) {
 //            xi = x[i];
 //            y[i] = gf_a_h[xi >> 8] ^ gf_a_l[xi & 0xff]; // = GFdiv(a, x[i]);
-//            // Or use y[i] = GF16SRT(gf_a_l, gf_a_h, xi);
+//            // Or use y[i] = GF16LkupSRT(gf_a_l, gf_a_h, xi);
 //        }
 //        free(gf_a_l);
 //
@@ -218,7 +245,7 @@ GF16crtRegTbl(uint16_t a, int type)
 //        for (i = 0; i < N; i++) {
 //            xi = x[i];
 //            y[i] = gf_a_h[xi >> 8] ^ gf_a_l[xi & 0xff]; // = GFdiv(x[i], a);
-//            // Or use y[i] = GF16SRT(gf_a_l, gf_a_h, xi);
+//            // Or use y[i] = GF16LkupSRT(gf_a_l, gf_a_h, xi);
 //        }
 //        free(gf_a_l);
 //
@@ -281,4 +308,65 @@ GF16crtSpltRegTbl(uint16_t a, int type)
 	}
 
 	return tb_l;
+}
+
+// Create 4bit split tables for regional calculation such as:
+//     a * x[i]
+//     a / x[i]
+//     x[i] / a
+// This is basically used with SIMD (SSE/NEON).
+//
+// Args:
+//     a: static value in regional calculation (or coefficient)
+//     type: 0: a * x[i]
+//           1: a / x[i]
+//           2: x[i] / a
+//
+// Return value:
+//     pointer to lowest table or NULL if failed. Free it later.
+//
+uint8_t *
+GF16crt4bitRegTbl(uint16_t a, int type)
+{
+	int		i;
+	uint8_t		*tb_0_l, *tb_0_h, *tb_1_l, *tb_1_h;
+	uint8_t		*tb_2_l, *tb_2_h, *tb_3_l, *tb_3_h;
+	uint16_t	 *a_addr, tmp;
+
+	// Initialize
+	tb_0_l = NULL;
+
+	// Allocate table
+	if ((tb_0_l = (uint8_t *)malloc(16 * 8)) == NULL) {
+		fprintf(stderr, "Error: %s: malloc: %s\n",
+			__func__, strerror(errno));
+		return NULL;
+	}
+	tb_0_h = tb_0_l + 16;
+	tb_1_l = tb_0_h + 16;
+	tb_1_h = tb_1_l + 16;
+	tb_2_l = tb_1_h + 16;
+	tb_2_h = tb_2_l + 16;
+	tb_3_l = tb_2_h + 16;
+	tb_3_h = tb_3_l + 16;
+
+	a_addr = GF16memL + GF16memIdx[a];
+
+	// Input values
+	for (i = 0; i < 16; i++) {
+		tmp = a_addr[GF16memIdx[i]];
+		tb_0_l[i] = tmp & 0xff;
+		tb_0_h[i] = tmp >> 8;
+		tmp = a_addr[GF16memIdx[i << 4]];
+		tb_1_l[i] = tmp & 0xff;
+		tb_1_h[i] = tmp >> 8;
+		tmp = a_addr[GF16memIdx[i << 8]];
+		tb_2_l[i] = tmp & 0xff;
+		tb_2_h[i] = tmp >> 8;
+		tmp = a_addr[GF16memIdx[i << 12]];
+		tb_3_l[i] = tmp & 0xff;
+		tb_3_h[i] = tmp >> 8;
+	}
+
+	return tb_0_l;
 }
