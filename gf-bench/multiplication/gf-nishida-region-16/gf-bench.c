@@ -81,7 +81,7 @@ main(int argc, char **argv)
 			// One step look up
 			d[j] = gf_a[b[j]];
 			// Or use:
-			//d[j] = GF16RT(gf_a, b[j]);
+			//d[j] = GF16LkupRT(gf_a, b[j]);
 		}
 	}
 
@@ -121,7 +121,7 @@ main(int argc, char **argv)
 			bj = b[j];
 			d[j] = gf_a_h[bj >> 8] ^ gf_a_l[bj & 0xff];
 			// Or use:
-			//d[j] = GF16SRT(gf_a_l, gf_a_h, bj);
+			//d[j] = GF16LkupSRT(gf_a_l, gf_a_h, bj);
 		}
 	}
 
