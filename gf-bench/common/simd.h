@@ -95,7 +95,7 @@ mm_print128_8(const char *str, __m128i var)
 	NEON
 *********************************************************************/
 #include <arm_neon.h>
-#include "SSE2NEON.h"
+#include "sse2neon.h"
 
 // Shift right 4bits
 #define ShiftR4_128(v)	vshrq_n_u8((v), 4)
