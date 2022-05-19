@@ -70,7 +70,7 @@ ShiftR4_128(__m128i v)
 }
 
 // Show each byte of __m128i
-inline void
+static inline void
 mm_print128_8(const char *str, __m128i var)
 {
 	uint8_t val[16];
@@ -95,13 +95,13 @@ mm_print128_8(const char *str, __m128i var)
 	NEON
 *********************************************************************/
 #include <arm_neon.h>
-#include "sse2neon.h"
+//#include "sse2neon.h"
 
 // Shift right 4bits
 #define ShiftR4_128(v)	vshrq_n_u8((v), 4)
 
 // Show each byte of uint8x16_t
-inline void
+static inline void
 mm_print128_8(const char *str, uint8x16_t var)
 {
 	uint8_t val[16];
