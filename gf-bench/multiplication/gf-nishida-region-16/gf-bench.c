@@ -247,7 +247,7 @@ main(int argc, char **argv)
 	__m128i	tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
 	__m128i	v_0, v_1, input_0, input_1, input_l, input_h;
 	__m128i	input_l_l, input_l_h, input_h_l, input_h_h;
-	__m128i	out_l, out_h;
+	__m128i	out_l, out_h, tmp;
 
 	// Reset d
 	memset(d, 0, SPACE); 
@@ -280,8 +280,9 @@ main(int argc, char **argv)
 			input_1 = _mm_loadu_si128((__m128i *)(_b + 16));
 
 			// Pack low bytes of inputs to input_l
-			v_0 = _mm_and_si128(input_0, _mm_set1_epi16(0x00ff));
-			v_1 = _mm_and_si128(input_1, _mm_set1_epi16(0x00ff));
+			tmp = _mm_set1_epi16(0x00ff);
+			v_0 = _mm_and_si128(input_0, tmp);
+			v_1 = _mm_and_si128(input_1, tmp);
 			input_l = _mm_packus_epi16(v_0, v_1);
 
 			// Pack high bytes of inputs to input_h
@@ -290,18 +291,19 @@ main(int argc, char **argv)
 			input_h = _mm_packus_epi16(v_0, v_1);
 
 			// Retrieve low 4bit of each byte from input_l
-			input_l_l = _mm_and_si128(input_l, _mm_set1_epi8(0x0f));
+			tmp = _mm_set1_epi8(0x0f);
+			input_l_l = _mm_and_si128(input_l, tmp);
 
 			// Retrieve high 4bit of each byte from input_l
 			v_0 = ShiftR4_128(input_l);
-			input_l_h = _mm_and_si128(v_0, _mm_set1_epi8(0x0f));
+			input_l_h = _mm_and_si128(v_0, tmp);
 
 			// Retrieve low 4bit of each byte from input_h
-			input_h_l = _mm_and_si128(input_h, _mm_set1_epi8(0x0f));
+			input_h_l = _mm_and_si128(input_h, tmp);
 
 			// Retrieve high 4bit of each byte from input_h
 			v_0 = ShiftR4_128(input_h);
-			input_h_h = _mm_and_si128(v_0, _mm_set1_epi8(0x0f));
+			input_h_h = _mm_and_si128(v_0, tmp);
 
 			// Get GF calc results for low bytes
 			v_0 = _mm_shuffle_epi8(tb_a_0_l, input_l_l);
@@ -339,11 +341,11 @@ main(int argc, char **argv)
 #elif defined(_arm64_)
 	/*** 4bit multi table region technique with NEON ***/
 	uint8_t		*_b, *_d;
-	uint8x16_t	input_0, input_1, input_l, input_h, v_0, v_1;
+	uint8x16_t	input_l, input_h, v_0, v_1;
 	uint8x16_t	tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h;
 	uint8x16_t	tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
-	uint8x16_t	input_l_l, input_l_h, input_h_l, input_h_h;
-	uint8x16_t	out_l, out_h;
+	uint8x16_t	input_l_l, input_l_h, input_h_l, input_h_h, tmp;
+	uint8x16x2_t	input, output;
 
 	// Create 4 * 16 byte region tables for a
 	if ((gf_tb = GF16crt4bitRegTbl(a, 0)) == NULL) {
@@ -368,59 +370,46 @@ main(int argc, char **argv)
 		_b = (uint8_t *)b;
 		_d = (uint8_t *)d;
 		for (j = 0; j < SPACE; j += 32) { // Do every 128 * 2bit
-			// Load inputs
-			input_0 = vld1q_u8(_b);
-			input_1 = vld1q_u8(_b + 16);
-
-			// Pack low bytes of inputs to input_l
-			v_0 = _mm_and_si128(input_0, _mm_set1_epi16(0x00ff));
-			v_1 = _mm_and_si128(input_1, _mm_set1_epi16(0x00ff));
-			input_l = _mm_packus_epi16(v_0, v_1);
-
-			// Pack high bytes of inputs to input_h
-			v_0 = vshrq_n_u16(input_0, 8);
-			v_1 = vshrq_n_u16(input_1, 8);
-			input_h = _mm_packus_epi16(v_0, v_1);
+			// Load interleaved inputs
+			input = vld2q_u8(_b);
+			input_l = input.val[0];
+			input_h = input.val[1];
 
 			// Retrieve low 4bit of each byte from input_l
-			input_l_l = _mm_and_si128(input_l, _mm_set1_epi8(0x0f));
+			tmp = vdupq_n_u8(0x0f);
+			input_l_l = vandq_u8(input_l, tmp);
 
 			// Retrieve high 4bit of each byte from input_l
-			input_l_h = ShiftR4_128(input_l);
+			input_l_h = vshrq_n_u8(input_l, 4);
 
 			// Retrieve low 4bit of each byte from input_h
-			input_h_l = _mm_and_si128(input_h, _mm_set1_epi8(0x0f));
+			input_h_l = vandq_u8(input_h, tmp);
 
 			// Retrieve high 4bit of each byte from input_h
-			input_h_h = ShiftR4_128(input_h);
+			input_h_h = vshrq_n_u8(input_h, 4);
 
 			// Get GF calc results for low bytes
 			v_0 = vqtbl1q_u8(tb_a_0_l, input_l_l);
-			v_0 = _mm_xor_si128(v_0,
+			v_0 = veorq_s64(v_0,
 				vqtbl1q_u8(tb_a_1_l, input_l_h));
-			v_0 = _mm_xor_si128(v_0,
+			v_0 = veorq_s64(v_0,
 				vqtbl1q_u8(tb_a_2_l, input_h_l));
-			v_0 = _mm_xor_si128(v_0,
+			v_0 = veorq_s64(v_0,
 				vqtbl1q_u8(tb_a_3_l, input_h_h));
 
 			// Get GF calc results for high bytes
 			v_1 = vqtbl1q_u8(tb_a_0_h, input_l_l);
-			v_1 = _mm_xor_si128(v_1,
+			v_1 = veorq_s64(v_1,
 				vqtbl1q_u8(tb_a_1_h, input_l_h));
-			v_1 = _mm_xor_si128(v_1,
+			v_1 = veorq_s64(v_1,
 				vqtbl1q_u8(tb_a_2_h, input_h_l));
-			v_1 = _mm_xor_si128(v_1,
+			v_1 = veorq_s64(v_1,
 				vqtbl1q_u8(tb_a_3_h, input_h_h));
 
-			// Unpack low bytes
-			out_l = _mm_unpacklo_epi8(v_0, v_1);
-
-			// Unpack high bytes
-			out_h = _mm_unpackhi_epi8(v_0, v_1);
-
-			// Save results
-			vst1q_u8(_d, out_l);
-			vst1q_u8(_d + 16, out_h);
+			// Save interleaved results
+			output.val[0] = v_0;
+			output.val[1] = v_1;
+			vst2q_u8(_d, output);
 
 			_b += 32;
 			_d += 32;
