@@ -1,32 +1,34 @@
-CC		= cc
+include ../../common/Makefile.inc
+
 EXECUTABLE	= gf-bench
 MAIN		= gf-bench.c
-INTERFACES	= aes-gcm.c ../../common/mt19937-64.c
+INTERFACES	= ../../common/mt19937-64.c
 SRCS		= $(MAIN) $(INTERFACES)
 OBJS		= $(SRCS:.c=.o)
-LIBS		= /path/to/libgf_complete.a
+LIBS		= ../../common/gf-complete/libgf_complete.a
 LIBPATH		= 
-INCPATH		= -I../../common/ -I/path/to/gf-complete
-CFLAGS		= -Wall -Ofast -mmmx -msse -DINTEL_SSE -msse2 -DINTEL_SSE2 \
-		  -msse3 -DINTEL_SSE3 -mssse3 -DINTEL_SSSE3 -fPIC $(INCPATH) 
+INCPATH		= -I../../common/ -I../../common/gf-complete
+CFLAGS		= -Wall $(OPTFLAGS) -mmmx -msse -DINTEL_SSE -msse2 \
+		  -DINTEL_SSE2 -msse3 -DINTEL_SSE3 -mssse3 -DINTEL_SSSE3 -fPIC \
+		  $(INCPATH) 
 
 ##################################################################
 
 .c.o:
 	$(CC) -c $(CFLAGS) $< -o $@
 
-$(EXECUTABLE) : $(OBJS)
+$(EXECUTABLE): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LIBPATH) $(LIBS)
 
-all : $(EXECUTABLE)
+all: $(EXECUTABLE)
 
 clean:
 	rm -f *.o *.core $(EXECUTABLE) $(LIBRARAY)
 
 depend:
-	mkdep $(CFLAGS) $(SRCS)
+	$(MKDEP) $(CFLAGS) $(SRCS)
 
-bench : $(EXECUTABLE)
+bench: $(EXECUTABLE)
 	@basename `pwd`
 	@./$(EXECUTABLE)
 

@@ -1,31 +1,32 @@
-CC		= cc
+include ../../common/Makefile.inc
+
 EXECUTABLE	= gf-bench
 MAIN		= gf-bench.c
-INTERFACES	= ../../common/gf.c ../../common/mt19937-64.c
+INTERFACES	= sse.c ../../common/gf.c ../../common/mt19937-64.c
 SRCS		= $(MAIN) $(INTERFACES)
 OBJS		= $(SRCS:.c=.o)
 LIBS		= 
 LIBPATH		= 
 INCPATH		= -I../../common/
-CFLAGS		= -Wall -Ofast $(INCPATH)
+CFLAGS		= -Wall $(OPTFLAGS) -mssse3 $(INCPATH)
 
 ##################################################################
 
 .c.o:
 	$(CC) -c $(CFLAGS) $< -o $@
 
-$(EXECUTABLE) : $(OBJS)
+$(EXECUTABLE): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LIBPATH) $(LIBS)
 
-all : $(EXECUTABLE)
+all: $(EXECUTABLE)
 
 clean:
 	rm -f *.o *.core $(EXECUTABLE) $(LIBRARAY)
 
 depend:
-	mkdep $(CFLAGS) $(SRCS)
+	$(MKDEP) $(CFLAGS) $(SRCS)
 
-bench : $(EXECUTABLE)
+bench: $(EXECUTABLE)
 	@basename `pwd`
 	@./$(EXECUTABLE)
 

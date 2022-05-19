@@ -9,7 +9,7 @@
  */
 
 #include <stdint.h>
-#include "common.h"
+#include "common-help.h"
 
 static void xor_block(uint8_t *dst, const uint8_t *src)
 {

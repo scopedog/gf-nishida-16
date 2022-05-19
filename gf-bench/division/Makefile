@@ -22,7 +22,7 @@ subdirs:
 
 clean:
 	for i in $(SUBDIR) ; do \
-		( cd $$i ; $(MAKE) clean ) ; \
+		( cd $$i ; $(MAKE) clean ; rm -f .depend ) ; \
 	done
 
 depend:

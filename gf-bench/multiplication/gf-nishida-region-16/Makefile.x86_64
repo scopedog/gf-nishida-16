@@ -1,5 +1,1 @@
-include Makefile.pre
-
-CFLAGS	+= -mssse3
-
-include Makefile.post
+Makefile.amd64

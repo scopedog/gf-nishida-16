@@ -1,4 +1,5 @@
-CC		= cc
+include Makefile.inc
+
 LIBRARY		= libgf.a
 INTERFACES	= gf.c mt19937-64.c
 SRCS		= $(INTERFACES)
@@ -6,7 +7,7 @@ OBJS		= $(SRCS:.c=.o)
 LIBS		= 
 LIBPATH		= 
 INCPATH		= 
-CFLAGS		= -Wall -Ofast $(INCPATH)
+CFLAGS		= -Wall $(OPTFLAGS) $(INCPATH)
 
 ##################################################################
 
@@ -23,7 +24,7 @@ clean:
 	rm -f *.o *.core $(LIBRARY)
 
 depend:
-	mkdep $(CFLAGS) $(SRCS)
+	$(MKDEP) $(CFLAGS) $(SRCS)
 
 bench : $(EXECUTABLE)
 	@basename `pwd`

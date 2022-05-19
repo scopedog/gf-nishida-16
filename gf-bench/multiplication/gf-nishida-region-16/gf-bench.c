@@ -206,7 +206,7 @@ main(int argc, char **argv)
 	gettimeofday(&end, NULL);
 
 	// Print result
-	printf("4*16byte region tables (non-SIMD): %ld\n",
+	printf("4 x 16byte lookup tables         : %ld\n",
 		((end.tv_sec * 1000000 + end.tv_usec) -
 		(start.tv_sec * 1000000 + start.tv_usec)));
 
@@ -390,21 +390,15 @@ main(int argc, char **argv)
 
 			// Get GF calc results for low bytes
 			v_0 = vqtbl1q_u8(tb_a_0_l, input_l_l);
-			v_0 = veorq_s64(v_0,
-				vqtbl1q_u8(tb_a_1_l, input_l_h));
-			v_0 = veorq_s64(v_0,
-				vqtbl1q_u8(tb_a_2_l, input_h_l));
-			v_0 = veorq_s64(v_0,
-				vqtbl1q_u8(tb_a_3_l, input_h_h));
+			v_0 = veorq_s64(v_0, vqtbl1q_u8(tb_a_1_l, input_l_h));
+			v_0 = veorq_s64(v_0, vqtbl1q_u8(tb_a_2_l, input_h_l));
+			v_0 = veorq_s64(v_0, vqtbl1q_u8(tb_a_3_l, input_h_h));
 
 			// Get GF calc results for high bytes
 			v_1 = vqtbl1q_u8(tb_a_0_h, input_l_l);
-			v_1 = veorq_s64(v_1,
-				vqtbl1q_u8(tb_a_1_h, input_l_h));
-			v_1 = veorq_s64(v_1,
-				vqtbl1q_u8(tb_a_2_h, input_h_l));
-			v_1 = veorq_s64(v_1,
-				vqtbl1q_u8(tb_a_3_h, input_h_h));
+			v_1 = veorq_s64(v_1, vqtbl1q_u8(tb_a_1_h, input_l_h));
+			v_1 = veorq_s64(v_1, vqtbl1q_u8(tb_a_2_h, input_h_l));
+			v_1 = veorq_s64(v_1, vqtbl1q_u8(tb_a_3_h, input_h_h));
 
 			// Save interleaved results
 			output.val[0] = v_0;
@@ -421,7 +415,7 @@ main(int argc, char **argv)
 	gettimeofday(&end, NULL);
 
 	// Print result
-	printf("4*16byte region tables + SIMD    : %ld\n",
+	printf("4 x 16byte lookup tables + SIMD  : %ld\n",
 		((end.tv_sec * 1000000 + end.tv_usec) -
 		(start.tv_sec * 1000000 + start.tv_usec)));
 

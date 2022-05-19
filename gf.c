@@ -310,11 +310,10 @@ GF16crtSpltRegTbl(uint16_t a, int type)
 	return tb_l;
 }
 
-// Create 4bit split tables for regional calculation such as:
+// Create split tables with 16 entries for SIMD regional calculation such as:
 //     a * x[i]
 //     a / x[i]
 //     x[i] / a
-// This is basically used with SIMD (SSE/NEON).
 //
 // Args:
 //     a: static value in regional calculation (or coefficient)
