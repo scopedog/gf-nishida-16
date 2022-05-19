@@ -20,8 +20,8 @@ For repeated (regional) computation like:
 		b = GFmul(a, x[i]);
 	}
 
-where 'a' is static and 'x' is an array, you can speed up by a region
-computation technique.
+where 'a' is static and 'x' is an array, you can speed up by the following
+region calculation technique.
 
 Change the above code to:
 	uint16_t a, x[], *gf_a, *_x;
@@ -62,23 +62,22 @@ do
 		_x++;
 	}
 
-For more speedup in region calculation, try GF16crtRegTbl() and
-GF16crtSpltRegTbl().
-Especially, the technique using GF16crtSpltRegTbl() requires only 1kB memory
-and will fit L1 cache.
+For more speedup in region calculation, see our technical paper,
+Especially, GF16crt4bitRegTbl() + the table lookup technique with SIMD shows
+superior performance.
 
 GF16crtRegTbl() technique:
-    Create table for regional calculation such as:
+    Create a lookup table for regional calculation such as:
         a * x[i]
         a / x[i]
         x[i] / a
-    This method may fit L2 cache and will be fast.
+    This method uses 128kB for the table and will run in L2 cache.
 
     For a * x[i],
         uint16_t *gf_a = GF16crtRegTbl(a, 0);
         for (i = 0; i < N; i++) {
             y[i] = gf_a[x[i]]; // This is equal to GFmul(a, x[i]);
-            // Or use y[i] = GF16RT(gf_a, x[i]);
+            // Or use y[i] = GF16LkupRT(gf_a, x[i]);
         }
         free(gf_a);
 
@@ -86,7 +85,7 @@ GF16crtRegTbl() technique:
         uint16_t *gf_a = GF16crtRegTbl(a, 1);
         for (i = 0; i < N; i++) {
             y[i] = gf_a[x[i]]; // This is equal to GFdiv(a, x[i]);
-            // Or use y[i] = GF16RT(gf_a, x[i]);
+            // Or use y[i] = GF16LkupRT(gf_a, x[i]);
         }
         free(gf_a);
 
@@ -94,16 +93,16 @@ GF16crtRegTbl() technique:
         uint16_t *gf_a = GF16crtRegTbl(a, 2);
         for (i = 0; i < N; i++) {
             y[i] = gf_a[x[i]]; // This is equal to GFdiv(x[i], a);
-            // Or use y[i] = GF16RT(gf_a, x[i]);
+            // Or use y[i] = GF16LkupRT(gf_a, x[i]);
         }
         free(gf_a);
 
 GF16crtSpltRegTbl technique:
-    Create 8bit split tables for regional calculation such as:
+    Create two lookup tables with 256 entries for regional calculation such as:
         a * x[i]
         a / x[i]
         x[i] / a
-    This method may fit L1 cache and will be even faster.
+    This method requires only 1kB for the tables and will run in L1 cache.
 
     For a * x[i],
         uint16_t *gf_a_l = GF16crtSpltRegTbl(a, 0);
@@ -112,7 +111,7 @@ GF16crtSpltRegTbl technique:
         for (i = 0; i < N; i++) {
             xi = x[i];
             y[i] = gf_a_h[xi >> 8] ^ gf_a_l[xi & 0xff]; // = GFmul(a, x[i]);
-            // Or use y[i] = GF16SRT(gf_a_l, gf_a_h, xi);
+            // Or use y[i] = GF16LkupSRT(gf_a_l, gf_a_h, xi);
         }
         free(gf_a_l);
 
@@ -123,7 +122,7 @@ GF16crtSpltRegTbl technique:
         for (i = 0; i < N; i++) {
             xi = x[i];
             y[i] = gf_a_h[xi >> 8] ^ gf_a_l[xi & 0xff]; // = GFdiv(a, x[i]);
-            // Or use y[i] = GF16SRT(gf_a_l, gf_a_h, xi);
+            // Or use y[i] = GF16LkupSRT(gf_a_l, gf_a_h, xi);
         }
         free(gf_a_l);
 
@@ -134,8 +133,17 @@ GF16crtSpltRegTbl technique:
         for (i = 0; i < N; i++) {
             xi = x[i];
             y[i] = gf_a_h[xi >> 8] ^ gf_a_l[xi & 0xff]; // = GFdiv(x[i], a);
-            // Or use y[i] = GF16SRT(gf_a_l, gf_a_h, xi);
+            // Or use y[i] = GF16LkupSRT(gf_a_l, gf_a_h, xi);
         }
         free(gf_a_l);
 
-See also gf-bench/*/gf-nishida-region-16/gf-bench.c.
+GF16crt4bitRegTbl + SIMD technique:
+    Create eight lookup tables with 16 entries for regional calculation such as:
+        a * x[i]
+        a / x[i]
+        x[i] / a
+    This method runs with SIMD.
+    For the details, please see
+    gf-bench/multiplication/gf-nishida-region-16/gf-bench.c
+
+See gf-bench/*/gf-nishida-region-16/gf-bench.c for sample code.
