@@ -6,10 +6,12 @@
 
 MAKE	= make
 
-SUBDIR	= gf-nishida-8 gf-nishida-16 gf-nishida-region-16 gf-solaris-128 \
-	  gf-aes-gcm-128 gf-complete-32 gf-complete-64 gf-sensor608-8 \
+SUBDIR	= gf-nishida-8 gf-nishida-16 gf-nishida-region-16 \
+	  gf-complete-32 gf-complete-region-32 \
+	  gf-complete-64 gf-complete-region-64 \
 	  gf-plank-8 gf-plank-16 gf-plank-32 gf-plank-logtable-16 \
-	  gf-ff-32 gf-ff-64
+	  gf-ff-32 gf-ff-64 \
+	  gf-solaris-128 gf-aes-gcm-128 gf-sensor608-8
 
 ###########################################################################
 
