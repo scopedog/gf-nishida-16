@@ -1,0 +1,12 @@
+include ../../common/Makefile.inc
+
+ARCH		!= uname -m
+EXECUTABLE	= gf-bench
+MAIN		= gf-bench.c
+INTERFACES	= ../../common/gf.c ../../common/mt19937-64.c
+SRCS		= $(MAIN) $(INTERFACES)
+OBJS		= $(SRCS:.c=.o)
+LIBS		= 
+LIBPATH		= 
+INCPATH		= -I../../common/
+CFLAGS		= -Wall $(OPTFLAGS) -D_$(ARCH)_ $(INCPATH)

@@ -39,13 +39,14 @@ main(int argc, char **argv)
 		r[i] = genrand64_int64();
 	}
 
-	// Set gf_a
+	/*** Two step table lookup technique ***/
+	// Set gf_a for c = b / a 
 	gf_a = GF16memH - GF16memIdx[a];
 
 	// Start measuring elapsed time
 	gettimeofday(&start, NULL); // Get start time
 
-	// Use regular region technique (faster than GF16div)
+	// c = b / a = gf_a[GF16memIdx(b)]]
 	for (i = 0; i < REPEAT; i++) {
 		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
 			// Two step look up
@@ -59,9 +60,12 @@ main(int argc, char **argv)
 	gettimeofday(&end, NULL);
 
 	// Print result
-	printf("Regular: %ld\n", ((end.tv_sec * 1000000 + end.tv_usec) -
+	printf("Two step table lookup        : %ld\n",
+		((end.tv_sec * 1000000 + end.tv_usec) -
 		(start.tv_sec * 1000000 + start.tv_usec)));
 
+	/*** One step table lookup techniwque
+	     This will run in L2 cache as gf_a is 128kB ***/
 	// Create region table for a
 	if ((gf_a = GF16crtRegTbl(a, 2)) == NULL) {
 		exit(1);
@@ -70,14 +74,13 @@ main(int argc, char **argv)
 	// Start measuring elapsed time
 	gettimeofday(&start, NULL); // Get start time
 
-	// Use special region technique not described in paper
-	// Supposed to be even faster
+	// d = a * b = gf_a[b]
 	for (i = 0; i < REPEAT; i++) {
 		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
 			// One step look up
 			d[j] = gf_a[b[j]];
-			// Or use
-			//d[j] = GF16RT(gf_a, b[j]);
+			// Or use:
+			//d[j] = GF16LkupRT(gf_a, b[j]);
 		}
 	}
 
@@ -85,7 +88,8 @@ main(int argc, char **argv)
 	gettimeofday(&end, NULL);
 
 	// Print result
-	printf("Special: %ld\n", ((end.tv_sec * 1000000 + end.tv_usec) -
+	printf("One step table lookup        : %ld\n",
+		((end.tv_sec * 1000000 + end.tv_usec) -
 		(start.tv_sec * 1000000 + start.tv_usec)));
 
 	// Don't forget this if you called GF16crtRegTbl()
@@ -98,7 +102,9 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
-	// Create 2 * 512 Byte region tables for a
+	/*** One step table lookup with two small tables
+	     This will run in L1 cache as gf_a_l and gf_a_h are 512B each ***/
+	// Create 2 * 512 byte region tables for a
 	if ((gf_a_l = GF16crtSpltRegTbl(a, 2)) == NULL) {
 		exit(1);
 	}
@@ -107,15 +113,14 @@ main(int argc, char **argv)
 	// Start measuring elapsed time
 	gettimeofday(&start, NULL); // Get start time
 
-	// Use extreme region technique not described in paper
-	// Supposed to be even faster
-	uint16_t	bj;
+	// d = a * b = gf_a_h[b >> 8] ^ gf_a_l[b & 0xff]
+	uint16_t bj;
 	for (i = 0; i < REPEAT; i++) {
 		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
 			bj = b[j];
 			d[j] = gf_a_h[bj >> 8] ^ gf_a_l[bj & 0xff];
 			// Or use:
-			//d[j] = GF16SRT(gf_a_l, gf_a_h, bj);
+			//d[j] = GF16LkupSRT(gf_a_l, gf_a_h, bj);
 		}
 	}
 
@@ -123,7 +128,8 @@ main(int argc, char **argv)
 	gettimeofday(&end, NULL);
 
 	// Print result
-	printf("Extreme: %ld\n", ((end.tv_sec * 1000000 + end.tv_usec) -
+	printf("One step lookup /w small tbls: %ld\n",
+		((end.tv_sec * 1000000 + end.tv_usec) -
 		(start.tv_sec * 1000000 + start.tv_usec)));
 
 	// Don't forget this if you called GF16GF16crtSpltRegTbl()
@@ -136,6 +142,184 @@ main(int argc, char **argv)
 			"if this happened.\n");
 		exit(1);
 	}
+
+	// From now on, we need this
+	uint8_t	*gf_tb;
+
+	// Reset d
+	memset(d, 0, SPACE); 
+
+#if defined(_amd64_) || defined(_x86_64_) // SSE
+	/*** 4bit multi table region technique with SSSE3 ***/
+	uint8_t	*_b, *_d;
+	__m128i	tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h;
+	__m128i	tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
+
+	// Create 4 * 16 byte region tables for a
+	if ((gf_tb = GF16crt4bitRegTbl(a, 2)) == NULL) {
+		exit(1);
+	}
+
+	// Load tables
+	tb_a_0_l = _mm_loadu_si128((__m128i *)(gf_tb + 0));
+	tb_a_0_h = _mm_loadu_si128((__m128i *)(gf_tb + 16));
+	tb_a_1_l = _mm_loadu_si128((__m128i *)(gf_tb + 32));
+	tb_a_1_h = _mm_loadu_si128((__m128i *)(gf_tb + 48));
+	tb_a_2_l = _mm_loadu_si128((__m128i *)(gf_tb + 64));
+	tb_a_2_h = _mm_loadu_si128((__m128i *)(gf_tb + 80));
+	tb_a_3_l = _mm_loadu_si128((__m128i *)(gf_tb + 96));
+	tb_a_3_h = _mm_loadu_si128((__m128i *)(gf_tb + 112));
+
+	// Start measuring elapsed time
+	gettimeofday(&start, NULL); // Get start time
+
+	// This is a little complicated...
+	for (i = 0; i < REPEAT; i++) {
+		_b = (uint8_t *)b;
+		_d = (uint8_t *)d;
+		for (j = 0; j < SPACE; j += 32) { // Do every 128 * 2bit
+			// Use SIMD lookup
+			GF16lkupSIMD(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
+				tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h,
+				_b, _d);
+
+			_b += 32;
+			_d += 32;
+		}
+	}
+
+#elif defined(_arm64_) // NEON
+	/*** 4bit multi table region technique with NEON ***/
+	uint8_t		*_b, *_d;
+	uint8x16_t	tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h;
+	uint8x16_t	tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
+
+	// Create 4 * 16 byte region tables for a
+	if ((gf_tb = GF16crt4bitRegTbl(a, 0)) == NULL) {
+		exit(1);
+	}
+
+	// Load tables
+	tb_a_0_l = vld1q_u8(gf_tb + 0);
+	tb_a_0_h = vld1q_u8(gf_tb + 16);
+	tb_a_1_l = vld1q_u8(gf_tb + 32);
+	tb_a_1_h = vld1q_u8(gf_tb + 48);
+	tb_a_2_l = vld1q_u8(gf_tb + 64);
+	tb_a_2_h = vld1q_u8(gf_tb + 80);
+	tb_a_3_l = vld1q_u8(gf_tb + 96);
+	tb_a_3_h = vld1q_u8(gf_tb + 112);
+
+	// Start measuring elapsed time
+	gettimeofday(&start, NULL); // Get start time
+
+	// This is a little complicated...
+	for (i = 0; i < REPEAT; i++) {
+		_b = (uint8_t *)b;
+		_d = (uint8_t *)d;
+		for (j = 0; j < SPACE; j += 32) { // Do every 128 * 2bit
+			// Use SIMD lookup
+			GF16lkupSIMD(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
+				tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h,
+				_b, _d);
+
+			_b += 32;
+			_d += 32;
+		}
+	}
+#endif
+
+	// Get end time
+	gettimeofday(&end, NULL);
+
+	// Print result
+	printf("One step lookup by SIMD      : %ld\n",
+		((end.tv_sec * 1000000 + end.tv_usec) -
+		(start.tv_sec * 1000000 + start.tv_usec)));
+
+	// Don't forget this if you called GF16crt4bitRegTbl()
+	free(gf_tb);
+
+	// Compare c and d, they are supposed to be same
+	if (memcmp(c, d, SPACE)) {
+		fprintf(stderr, "Error at SIMD: E-mail me "
+			"(nishida at asusa.net) if this happened.\n");
+		for (i = 0; i < 16; i++) {
+			printf("%04x ", c[i]);
+		}
+		putchar('\n');
+		for (i = 0; i < 16; i++) {
+			printf("%04x ", d[i]);
+		}
+		putchar('\n');
+		exit(1);
+	}
+
+#if 0	// Set non 0 if you want to compare SIMD and non-SIMD
+	/*** Non-SIMD region technique similar to SIMD one above ***/
+	uint8_t	*gf_a_0_l, *gf_a_0_h, *gf_a_1_l, *gf_a_1_h;
+	uint8_t	*gf_a_2_l, *gf_a_2_h, *gf_a_3_l, *gf_a_3_h;
+	uint16_t tmp, low, high;
+
+	// Reset d
+	memset(d, 0, SPACE); 
+
+	// Create 4 * 16 byte region tables for a
+	if ((gf_tb = GF16crt4bitRegTbl(a, 0)) == NULL) {
+		exit(1);
+	}
+	
+	gf_a_0_l = gf_tb;
+	gf_a_0_h = gf_tb + 16;
+	gf_a_1_l = gf_tb + 32;
+	gf_a_1_h = gf_tb + 48;
+	gf_a_2_l = gf_tb + 64;
+	gf_a_2_h = gf_tb + 80;
+	gf_a_3_l = gf_tb + 96;
+	gf_a_3_h = gf_tb + 112;
+
+	// Start measuring elapsed time
+	gettimeofday(&start, NULL); // Get start time
+
+	for (i = 0; i < REPEAT; i++) {
+		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
+			bj = b[j];
+/*			// Basic idea
+			d[j] = (gf_a_0_l[bj & 0x000f]) ^
+			       (gf_a_0_h[bj & 0x00f] << 8) ^
+			       (gf_a_1_l[(bj >> 4) & 0x00f]) ^
+			       (gf_a_1_h[(bj >> 4) & 0x00f] << 8) ^
+			       (gf_a_2_l[(bj >> 8) & 0x00f]) ^
+			       (gf_a_2_h[(bj >> 8) & 0x00f] << 8) ^
+			       (gf_a_3_l[(bj >> 12) & 0x00f]) ^
+			       (gf_a_3_h[(bj >> 12) & 0x00f] << 8);
+*/
+			tmp = bj & 0x000f;
+			low = gf_a_0_l[tmp];
+			high = gf_a_0_h[tmp];
+			tmp = (bj & 0x00f0) >> 4;
+			low ^= gf_a_1_l[tmp];
+			high ^= gf_a_1_h[tmp];
+			tmp = (bj & 0x0f00) >> 8;
+			low ^= gf_a_2_l[tmp];
+			high ^= gf_a_2_h[tmp];
+			tmp = (bj & 0xf000) >> 12;
+			low ^= gf_a_3_l[tmp];
+			high ^= gf_a_3_h[tmp];
+			d[j] = low | (high << 8);
+		}
+	}
+
+	// Get end time
+	gettimeofday(&end, NULL);
+
+	// Print result
+	printf("One step lookup /w tiny tbls : %ld\n",
+		((end.tv_sec * 1000000 + end.tv_usec) -
+		(start.tv_sec * 1000000 + start.tv_usec)));
+
+	// Don't forget this if you called GF16crt4bitRegTbl()
+	free(gf_tb);
+#endif
 
 	exit(0);
 }

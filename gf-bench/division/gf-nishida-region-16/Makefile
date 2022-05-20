@@ -1,32 +1,13 @@
-include ../../common/Makefile.inc
+ARCH	!= uname -m
 
-EXECUTABLE	= gf-bench
-MAIN		= gf-bench.c
-INTERFACES	= sse.c ../../common/gf.c ../../common/mt19937-64.c
-SRCS		= $(MAIN) $(INTERFACES)
-OBJS		= $(SRCS:.c=.o)
-LIBS		= 
-LIBPATH		= 
-INCPATH		= -I../../common/
-CFLAGS		= -Wall $(OPTFLAGS) -mssse3 $(INCPATH)
-
-##################################################################
-
-.c.o:
-	$(CC) -c $(CFLAGS) $< -o $@
-
-$(EXECUTABLE): $(OBJS)
-	$(CC) -o $@ $(OBJS) $(LIBPATH) $(LIBS)
-
-all: $(EXECUTABLE)
+all:
+	make -f Makefile.$(ARCH)
 
 clean:
-	rm -f *.o *.core $(EXECUTABLE) $(LIBRARAY)
+	make -f Makefile.$(ARCH) $@
 
 depend:
-	$(MKDEP) $(CFLAGS) $(SRCS)
+	make -f Makefile.$(ARCH) $@
 
-bench: $(EXECUTABLE)
-	@basename `pwd`
-	@./$(EXECUTABLE)
-
+bench:
+	make -f Makefile.$(ARCH) $@

@@ -62,7 +62,7 @@ do
 		_x++;
 	}
 
-For more speedup in region calculation, see our technical paper,
+For more speedup in region calculation, see our technical paper.
 Especially, GF16crt4bitRegTbl() + the table lookup technique with SIMD shows
 superior performance.
 
