@@ -310,10 +310,11 @@ GF16crtSpltRegTbl(uint16_t a, int type)
 	return tb_l;
 }
 
-// Create split tables with 16 entries for SIMD regional calculation such as:
+// Create 4bit split tables for regional calculation such as:
 //     a * x[i]
 //     a / x[i]
 //     x[i] / a
+// This is basically used with SIMD (SSE/NEON).
 //
 // Args:
 //     a: static value in regional calculation (or coefficient)
@@ -349,22 +350,74 @@ GF16crt4bitRegTbl(uint16_t a, int type)
 	tb_3_l = tb_2_h + 16;
 	tb_3_h = tb_3_l + 16;
 
-	a_addr = GF16memL + GF16memIdx[a];
-
 	// Input values
-	for (i = 0; i < 16; i++) {
-		tmp = a_addr[GF16memIdx[i]];
-		tb_0_l[i] = tmp & 0xff;
-		tb_0_h[i] = tmp >> 8;
-		tmp = a_addr[GF16memIdx[i << 4]];
-		tb_1_l[i] = tmp & 0xff;
-		tb_1_h[i] = tmp >> 8;
-		tmp = a_addr[GF16memIdx[i << 8]];
-		tb_2_l[i] = tmp & 0xff;
-		tb_2_h[i] = tmp >> 8;
-		tmp = a_addr[GF16memIdx[i << 12]];
-		tb_3_l[i] = tmp & 0xff;
-		tb_3_h[i] = tmp >> 8;
+	switch (type) {
+	case 0: // a * x[i]
+		a_addr = GF16memL + GF16memIdx[a];
+
+		// Input values
+		for (i = 0; i < 16; i++) {
+			tmp = a_addr[GF16memIdx[i]];
+			tb_0_l[i] = tmp & 0xff;
+			tb_0_h[i] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 4]];
+			tb_1_l[i] = tmp & 0xff;
+			tb_1_h[i] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 8]];
+			tb_2_l[i] = tmp & 0xff;
+			tb_2_h[i] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 12]];
+			tb_3_l[i] = tmp & 0xff;
+			tb_3_h[i] = tmp >> 8;
+		}
+		break;
+
+	case 1: // a / x[i]
+		a_addr = GF16memH + GF16memIdx[a];
+
+		// Input values
+		for (i = 0; i < 16; i++) {
+			tmp = *(a_addr - GF16memIdx[i]);
+			tb_0_l[i] = tmp & 0xff;
+			tb_0_h[i] = tmp >> 8;
+			tmp = *(a_addr - GF16memIdx[i << 4]);
+			tb_1_l[i] = tmp & 0xff;
+			tb_1_h[i] = tmp >> 8;
+			tmp = *(a_addr - GF16memIdx[i << 8]);
+			tb_2_l[i] = tmp & 0xff;
+			tb_2_h[i] = tmp >> 8;
+			tmp = *(a_addr - GF16memIdx[i << 12]);
+			tb_3_l[i] = tmp & 0xff;
+			tb_3_h[i] = tmp >> 8;
+		}
+		break;
+
+	case 2: // x[i] / a
+		a_addr = GF16memH - GF16memIdx[a];
+
+		// Input values
+		for (i = 0; i < 16; i++) {
+			tmp = a_addr[GF16memIdx[i]];
+			tb_0_l[i] = tmp & 0xff;
+			tb_0_h[i] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 4]];
+			tb_1_l[i] = tmp & 0xff;
+			tb_1_h[i] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 8]];
+			tb_2_l[i] = tmp & 0xff;
+			tb_2_h[i] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 12]];
+			tb_3_l[i] = tmp & 0xff;
+			tb_3_h[i] = tmp >> 8;
+		}
+		break;
+
+	default:
+		fprintf(stderr, "Error: %s: Illegal second argument value: %d "
+			"(value must be 0, 1, or 2)\n",
+			__func__, type);
+		free(tb_0_l);
+		return NULL;
 	}
 
 	return tb_0_l;
