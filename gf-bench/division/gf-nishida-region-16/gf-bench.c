@@ -195,7 +195,7 @@ main(int argc, char **argv)
 	uint8x16_t	tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
 
 	// Create 4 * 16 byte region tables for a
-	if ((gf_tb = GF16crt4bitRegTbl(a, 0)) == NULL) {
+	if ((gf_tb = GF16crt4bitRegTbl(a, 2)) == NULL) {
 		exit(1);
 	}
 
