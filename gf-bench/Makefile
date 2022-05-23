@@ -6,7 +6,7 @@
 
 MAKE	= make
 
-SUBDIR	= common multiplication division
+SUBDIR	= common multiplication division bench-all
 
 ###########################################################################
 

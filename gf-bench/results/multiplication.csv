@@ -1,0 +1,20 @@
+Algorithm, Speed (MB/s)
+gf-aes-gcm-128, 15.359490
+gf-complete-32, 1094.450899
+gf-complete-64, 2540.195367
+gf-ff-32, 314.003822
+gf-ff-64, 287.134061
+gf-nishida-16, 1397.351310
+gf-nishida-8, 2386.058706
+gf-nishida-region-16-1, 1398.933477
+gf-nishida-region-16-2, 3847.437096
+gf-nishida-region-16-3, 3727.363727
+gf-nishida-region-16-4, 8856.936261
+gf-plank-16, 357.859850
+gf-plank-32, 551.066599
+gf-plank-8, 252.388572
+gf-plank-logtable-16, 577.850516
+gf-sensor608-8, 2405.045334
+gf-solaris-128, 97.750401
+gf-complete-region-32, 4913.226848
+gf-complete-region-64, 2470.432017
