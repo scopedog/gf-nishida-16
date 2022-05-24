@@ -1,0 +1,39 @@
+Multiplication,
+Algorithm, Speed (MB/s)
+gf-aes-gcm-128, 2.780645
+gf-complete-32, 69.921408
+gf-complete-64, 67.242343
+gf-complete-region-32, 1708.165867
+gf-complete-region-64, 816.556187
+gf-ff-32, 40.316124
+gf-ff-64, 39.223663
+gf-nishida-16, 63.007019
+gf-nishida-8, 196.843393
+gf-nishida-region-16-1, 330.859085
+gf-nishida-region-16-2, 656.683790
+gf-nishida-region-16-3, 1075.702116
+gf-nishida-region-16-4, 3209.972985
+gf-plank-16, 26.800339
+gf-plank-32, 40.576659
+gf-plank-8, 34.786186
+gf-plank-logtable-16, 45.991832
+gf-sensor608-8, 196.973926
+gf-solaris-128, inf
+
+Division,
+Algorithm, Speed (MB/s)
+gf-complete-32, 3.159906
+gf-complete-64, 1.810205
+gf-ff-32, 2.247776
+gf-ff-64, 2.255325
+gf-nishida-16, 63.262113
+gf-nishida-8, 55.481491
+gf-nishida-region-16-1, 330.527060
+gf-nishida-region-16-2, 656.656587
+gf-nishida-region-16-3, 1075.200172
+gf-nishida-region-16-4, 3205.832612
+gf-plank-16, 26.249516
+nk-32, 0.299879
+gf-plank-8, 23.654335
+gf-plank-logtable-16, 46.742154
+gf-sensor608-8, 53.979703
