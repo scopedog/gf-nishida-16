@@ -107,12 +107,18 @@ BenchGfNishidaRegion16()
 			(double)(SPACE * REPEAT) / ((double)bench_res[idx] /
 				(double)num_repeat));
 	}
+#if defined(_amd64_) || defined(_x86_64_) // SSE/AVX
 	printf("gf-nishida-region-16-4-SSE, %f\n",
 		(double)(SPACE * REPEAT) / ((double)bench_res[3] /
 				(double)num_repeat));
 	printf("gf-nishida-region-16-4-AVX, %f\n",
 		(double)(SPACE * REPEAT) / ((double)bench_res[4] /
 				(double)num_repeat));
+#elif defined(_arm64_) // NEON
+	printf("gf-nishida-region-16-4-NEON, %f\n",
+		(double)(SPACE * REPEAT) / ((double)bench_res[3] /
+				(double)num_repeat));
+#endif
 
 END:	// Finalize
 	if (fp != NULL) {
