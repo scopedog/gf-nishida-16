@@ -2,6 +2,7 @@ Multiplication,
 Algorithm, Speed (MB/s)
 gf-complete-32, 69.921408
 gf-complete-64, 67.242343
+gf-complete-region-16, 2939.028926
 gf-complete-region-32, 1708.165867
 gf-complete-region-64, 816.556187
 gf-plank-8, 34.786186
