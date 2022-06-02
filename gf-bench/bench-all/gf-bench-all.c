@@ -62,7 +62,7 @@ BenchGfNishidaRegion16()
 {
 	char		buf[BUFSIZ], *p, *q;
 	int		n, idx, err = 0;
-	uint64_t	bench_res[4];
+	uint64_t	bench_res[5];
 	FILE		*fp = NULL;
 
 	// Iniitialize
@@ -102,12 +102,17 @@ BenchGfNishidaRegion16()
 	}
 
 	// Print results (MB/s)
-	for (idx = 0; idx < 4; idx++) {
-		//printf("%ld\n", bench_res[idx] / num_repeat);
+	for (idx = 0; idx < 3; idx++) {
 		printf("gf-nishida-region-16-%d, %f\n", idx + 1,
 			(double)(SPACE * REPEAT) / ((double)bench_res[idx] /
 				(double)num_repeat));
 	}
+	printf("gf-nishida-region-16-4-SSE, %f\n",
+		(double)(SPACE * REPEAT) / ((double)bench_res[3] /
+				(double)num_repeat));
+	printf("gf-nishida-region-16-4-AVX, %f\n",
+		(double)(SPACE * REPEAT) / ((double)bench_res[4] /
+				(double)num_repeat));
 
 END:	// Finalize
 	if (fp != NULL) {
@@ -151,7 +156,6 @@ BenchGfOther(const char *name)
 	}
 
 	// Print results (MB/s)
-	//printf("%ld\n", bench_res[idx] / num_repeat);
 	printf("%s, %f\n", name,
 		(double)(SPACE * REPEAT)/ ((double)bench_res /
 			(double)num_repeat));

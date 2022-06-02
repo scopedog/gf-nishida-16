@@ -40,6 +40,7 @@ main(int argc, char **argv)
 	}
 
 	/*** Two step table lookup technique ***/
+
 	// Set gf_a for c = b / a 
 	gf_a = GF16memH - GF16memIdx[a];
 
@@ -64,8 +65,9 @@ main(int argc, char **argv)
 		((end.tv_sec * 1000000 + end.tv_usec) -
 		(start.tv_sec * 1000000 + start.tv_usec)));
 
-	/*** One step table lookup techniwque
+	/*** One step table lookup technique
 	     This will run in L2 cache as gf_a is 128kB ***/
+
 	// Create region table for a
 	if ((gf_a = GF16crtRegTbl(a, 2)) == NULL) {
 		exit(1);
@@ -149,8 +151,10 @@ main(int argc, char **argv)
 	// Reset d
 	memset(d, 0, SPACE); 
 
-#if defined(_amd64_) || defined(_x86_64_) // SSE
+#if defined(_amd64_) || defined(_x86_64_) // SSE/AVX
+{
 	/*** 4bit multi table region technique with SSSE3 ***/
+
 	uint8_t	*_b, *_d;
 	__m128i	tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h;
 	__m128i	tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
@@ -179,17 +183,114 @@ main(int argc, char **argv)
 		_d = (uint8_t *)d;
 		for (j = 0; j < SPACE; j += 32) { // Do every 128 * 2bit
 			// Use SIMD lookup
-			GF16lkupSIMD(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
-				tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h,
-				_b, _d);
+			GF16lkupSIMD128(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
+					tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h,
+					_b, _d);
 
 			_b += 32;
 			_d += 32;
 		}
 	}
 
+	// Get end time
+	gettimeofday(&end, NULL);
+
+	// Print result
+	printf("One step lookup by SSE       : %ld\n",
+		((end.tv_sec * 1000000 + end.tv_usec) -
+		(start.tv_sec * 1000000 + start.tv_usec)));
+
+	// Don't forget this if you called GF16crt4bitRegTbl()
+	free(gf_tb);
+
+	// Compare c and d, they are supposed to be same
+	if (memcmp(c, d, SPACE)) {
+		fprintf(stderr, "Error at SSE: E-mail me "
+			"(nishida at asusa.net) if this happened.\n");
+		for (i = 0; i < 16; i++) {
+			printf("%04x ", c[i]);
+		}
+		putchar('\n');
+		for (i = 0; i < 16; i++) {
+			printf("%04x ", d[i]);
+		}
+		putchar('\n');
+		exit(1);
+	}
+}
+
+{
+	/*** 4bit multi table region technique by AVX2 ***/
+
+	uint8_t	*_b, *_d;
+	__m256i	tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h;
+	__m256i	tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
+
+	// Reset d
+	memset(d, 0, SPACE); 
+
+	// Create 4 * 16 byte region tables for a
+	if ((gf_tb = GF16crt4bitRegTbl256(a, 2)) == NULL) {
+		exit(1);
+	}
+
+	// Load tables
+	tb_a_0_l = _mm256_loadu_si256((__m256i *)(gf_tb + 0));
+	tb_a_0_h = _mm256_loadu_si256((__m256i *)(gf_tb + 32));
+	tb_a_1_l = _mm256_loadu_si256((__m256i *)(gf_tb + 64));
+	tb_a_1_h = _mm256_loadu_si256((__m256i *)(gf_tb + 96));
+	tb_a_2_l = _mm256_loadu_si256((__m256i *)(gf_tb + 128));
+	tb_a_2_h = _mm256_loadu_si256((__m256i *)(gf_tb + 160));
+	tb_a_3_l = _mm256_loadu_si256((__m256i *)(gf_tb + 192));
+	tb_a_3_h = _mm256_loadu_si256((__m256i *)(gf_tb + 224));
+
+	// Start measuring elapsed time
+	gettimeofday(&start, NULL); // Get start time
+
+	// This is a little complicated...
+	for (i = 0; i < REPEAT; i++) {
+		_b = (uint8_t *)b;
+		_d = (uint8_t *)d;
+		for (j = 0; j < SPACE; j += 64) { // Do every 256 * 2bit
+			// Use SIMD lookup
+			GF16lkupSIMD256(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
+					tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h,
+					_b, _d);
+
+			_b += 64;
+			_d += 64;
+		}
+	}
+
+	// Get end time
+	gettimeofday(&end, NULL);
+
+	// Print result
+	printf("One step lookup by AVX       : %ld\n",
+		((end.tv_sec * 1000000 + end.tv_usec) -
+		(start.tv_sec * 1000000 + start.tv_usec)));
+
+	// Don't forget this if you called GF16crt4bitRegTbl()
+	free(gf_tb);
+
+	// Compare c and d, they are supposed to be same
+	if (memcmp(c, d, SPACE)) {
+		fprintf(stderr, "Error at AVX: E-mail me "
+			"(nishida at asusa.net) if this happened.\n");
+		for (i = 0; i < 16; i++) {
+			printf("%04x ", c[i]);
+		}
+		putchar('\n');
+		for (i = 0; i < 16; i++) {
+			printf("%04x ", d[i]);
+		}
+		putchar('\n');
+		exit(1);
+	}
+}
 #elif defined(_arm64_) // NEON
-	/*** 4bit multi table region technique with NEON ***/
+	/*** 4bit multi table region technique by NEON ***/
+
 	uint8_t		*_b, *_d;
 	uint8x16_t	tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h;
 	uint8x16_t	tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
@@ -226,13 +327,12 @@ main(int argc, char **argv)
 			_d += 32;
 		}
 	}
-#endif
 
 	// Get end time
 	gettimeofday(&end, NULL);
 
 	// Print result
-	printf("One step lookup by SIMD      : %ld\n",
+	printf("One step lookup by NEON      : %ld\n",
 		((end.tv_sec * 1000000 + end.tv_usec) -
 		(start.tv_sec * 1000000 + start.tv_usec)));
 
@@ -241,7 +341,7 @@ main(int argc, char **argv)
 
 	// Compare c and d, they are supposed to be same
 	if (memcmp(c, d, SPACE)) {
-		fprintf(stderr, "Error at SIMD: E-mail me "
+		fprintf(stderr, "Error at NEON: E-mail me "
 			"(nishida at asusa.net) if this happened.\n");
 		for (i = 0; i < 16; i++) {
 			printf("%04x ", c[i]);
@@ -253,6 +353,7 @@ main(int argc, char **argv)
 		putchar('\n');
 		exit(1);
 	}
+#endif
 
 #if 0	// Set non 0 if you want to compare SIMD and non-SIMD
 	/*** Non-SIMD region technique similar to SIMD one above ***/

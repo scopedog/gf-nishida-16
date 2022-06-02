@@ -1,4 +1,4 @@
-Multiplication,
+Multiplication
 Algorithm, Speed (MB/s)
 gf-complete-32, 1094.450899
 gf-complete-64, 2540.195367
@@ -15,12 +15,13 @@ gf-sensor608-8, 2405.045334
 gf-solaris-128, 97.750401
 gf-nishida-8, 2386.058706
 gf-nishida-16, 1397.351310
-gf-nishida-region-16-1, 1398.933477
-gf-nishida-region-16-2, 3847.437096
-gf-nishida-region-16-3, 3727.363727
-gf-nishida-region-16-4, 8856.936261
+gf-nishida-region-16-1, 1353.205366
+gf-nishida-region-16-2, 3821.337543
+gf-nishida-region-16-3, 3721.695669
+gf-nishida-region-16-4-SSE, 9197.070589
+gf-nishida-region-16-4-AVX, 13900.276377
 
-Division,
+Division
 Algorithm, Speed (MB/s)
 gf-complete-32, 20.845508
 gf-complete-64, 29.499117
@@ -33,7 +34,8 @@ gf-ff-64, 17.682573
 gf-sensor608-8, 935.440877
 gf-nishida-8, 1667.438508
 gf-nishida-16, 1369.197025
-gf-nishida-16-1, 1347.871035
-gf-nishida-16-2, 3754.728244
-gf-nishida-16-3, 3625.820944
-gf-nishida-16-4, 8560.241024
+gf-nishida-region-16-1, 1403.500308
+gf-nishida-region-16-2, 3839.773453
+gf-nishida-region-16-3, 3740.535423
+gf-nishida-region-16-4-SSE, 9454.990000
+gf-nishida-region-16-4-AVX, 14612.998148

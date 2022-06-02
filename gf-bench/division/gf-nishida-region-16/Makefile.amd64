@@ -1,5 +1,5 @@
 include Makefile.pre
 
-CFLAGS	+= -mssse3
+CFLAGS	+= -mssse3 -mavx2
 
 include Makefile.post

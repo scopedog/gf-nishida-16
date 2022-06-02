@@ -422,3 +422,112 @@ GF16crt4bitRegTbl(uint16_t a, int type)
 
 	return tb_0_l;
 }
+
+// Same as GF16crt4bitRegTbl() but for 256bit SIMD like AVX
+//
+// Args:
+//     a: static value in regional calculation (or coefficient)
+//     type: 0: a * x[i]
+//           1: a / x[i]
+//           2: x[i] / a
+//
+// Return value:
+//     pointer to lowest table or NULL if failed. Free it later.
+//
+uint8_t *
+GF16crt4bitRegTbl256(uint16_t a, int type)
+{
+	int		i, i16;
+	uint8_t		*tb_0_l, *tb_0_h, *tb_1_l, *tb_1_h;
+	uint8_t		*tb_2_l, *tb_2_h, *tb_3_l, *tb_3_h;
+	uint16_t	 *a_addr, tmp;
+
+	// Initialize
+	tb_0_l = NULL;
+
+	// Allocate table
+	if ((tb_0_l = (uint8_t *)malloc(256)) == NULL) {
+		fprintf(stderr, "Error: %s: malloc: %s\n",
+			__func__, strerror(errno));
+		return NULL;
+	}
+	tb_0_h = tb_0_l + 32;
+	tb_1_l = tb_0_h + 32;
+	tb_1_h = tb_1_l + 32;
+	tb_2_l = tb_1_h + 32;
+	tb_2_h = tb_2_l + 32;
+	tb_3_l = tb_2_h + 32;
+	tb_3_h = tb_3_l + 32;
+
+	// Input values
+	switch (type) {
+	case 0: // a * x[i]
+		a_addr = GF16memL + GF16memIdx[a];
+
+		// Input values
+		for (i = 0, i16 = 16; i < 16; i++, i16++) {
+			tmp = a_addr[GF16memIdx[i]];
+			tb_0_l[i] = tb_0_l[i16] = tmp & 0xff;
+			tb_0_h[i] = tb_0_h[i16] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 4]];
+			tb_1_l[i] = tb_1_l[i16] = tmp & 0xff;
+			tb_1_h[i] = tb_1_h[i16] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 8]];
+			tb_2_l[i] = tb_2_l[i16] = tmp & 0xff;
+			tb_2_h[i] = tb_2_h[i16] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 12]];
+			tb_3_l[i] = tb_3_l[i16] = tmp & 0xff;
+			tb_3_h[i] = tb_3_h[i16] = tmp >> 8;
+		}
+		break;
+
+	case 1: // a / x[i]
+		a_addr = GF16memH + GF16memIdx[a];
+
+		// Input values
+		for (i = 0, i16 = 16; i < 16; i++, i16++) {
+			tmp = *(a_addr - GF16memIdx[i]);
+			tb_0_l[i] = tb_0_l[i16] = tmp & 0xff;
+			tb_0_h[i] = tb_0_h[i16] = tmp >> 8;
+			tmp = *(a_addr - GF16memIdx[i << 4]);
+			tb_1_l[i] = tb_1_l[i16] = tmp & 0xff;
+			tb_1_h[i] = tb_1_h[i16] = tmp >> 8;
+			tmp = *(a_addr - GF16memIdx[i << 8]);
+			tb_2_l[i] = tb_2_l[i16] = tmp & 0xff;
+			tb_2_h[i] = tb_2_h[i16] = tmp >> 8;
+			tmp = *(a_addr - GF16memIdx[i << 12]);
+			tb_3_l[i] = tb_3_l[i16] = tmp & 0xff;
+			tb_3_h[i] = tb_3_h[i16] = tmp >> 8;
+		}
+		break;
+
+	case 2: // x[i] / a
+		a_addr = GF16memH - GF16memIdx[a];
+
+		// Input values
+		for (i = 0, i16 = 16; i < 16; i++, i16++) {
+			tmp = a_addr[GF16memIdx[i]];
+			tb_0_l[i] = tb_0_l[i16] = tmp & 0xff;
+			tb_0_h[i] = tb_0_h[i16] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 4]];
+			tb_1_l[i] = tb_1_l[i16] = tmp & 0xff;
+			tb_1_h[i] = tb_1_h[i16] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 8]];
+			tb_2_l[i] = tb_2_l[i16] = tmp & 0xff;
+			tb_2_h[i] = tb_2_h[i16] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 12]];
+			tb_3_l[i] = tb_3_l[i16] = tmp & 0xff;
+			tb_3_h[i] = tb_3_h[i16] = tmp >> 8;
+		}
+		break;
+
+	default:
+		fprintf(stderr, "Error: %s: Illegal second argument value: %d "
+			"(value must be 0, 1, or 2)\n",
+			__func__, type);
+		free(tb_0_l);
+		return NULL;
+	}
+
+	return tb_0_l;
+}
