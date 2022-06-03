@@ -9,7 +9,7 @@ OBJS		= $(SRCS:.c=.o)
 LIBS		= 
 LIBPATH		= 
 INCPATH		= -I../common/
-CFLAGS		= -Wall $(OPTFLAGS) -D_$(ARCH) $(INCPATH)
+CFLAGS		= -Wall $(OPTFLAGS) -D_$(ARCH)_ $(INCPATH)
 
 ##################################################################
 

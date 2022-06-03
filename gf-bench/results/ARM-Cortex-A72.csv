@@ -1,39 +1,40 @@
-Multiplication,
+Multiplication
 Algorithm, Speed (MB/s)
-gf-complete-32, 69.921408
-gf-complete-64, 67.242343
-gf-complete-region-16, 2939.028926
-gf-complete-region-32, 1708.165867
-gf-complete-region-64, 816.556187
-gf-plank-8, 34.786186
-gf-plank-16, 26.800339
-gf-plank-32, 40.576659
-gf-plank-logtable-16, 45.991832
-gf-ff-32, 40.316124
-gf-ff-64, 39.223663
-gf-aes-gcm-128, 2.780645
-gf-sensor608-8, 196.973926
-gf-nishida-8, 196.843393
-gf-nishida-16, 63.007019
-gf-nishida-region-16-1, 330.859085
-gf-nishida-region-16-2, 656.683790
-gf-nishida-region-16-3, 1075.702116
-gf-nishida-region-16-4-NEON, 3209.972985
+gf-complete-32, 13.9842816
+gf-complete-64, 13.4484686
+gf-complete-region-16, 587.8057852
+gf-complete-region-32, 341.6331734
+gf-complete-region-64, 163.3112374
+gf-plank-8, 6.9572372
+gf-plank-16, 5.3600678
+gf-plank-32, 8.1153318
+gf-plank-logtable-16, 9.1983664
+gf-ff-32, 8.0632248
+gf-ff-64, 7.8447326
+gf-aes-gcm-128, 0.556129
+gf-sensor608-8, 39.3947852
+gf-nishida-8, 39.3686786
+gf-nishida-16, 12.6014038
+gf-nishida-region-16-1, 66.617952
+gf-nishida-region-16-2, 131.854571
+gf-nishida-region-16-3, 215.248869
+gf-nishida-region-16-4-NEON, 642.175772
 
-Division,
+Division
 Algorithm, Speed (MB/s)
-gf-complete-32, 3.159906
-gf-complete-64, 1.810205
-gf-plank-8, 23.654335
-gf-plank-16, 26.249516
-gf-plank-32, 0.299879
-gf-plank-logtable-16, 46.742154
-gf-ff-32, 2.247776
-gf-ff-64, 2.255325
-gf-sensor608-8, 53.979703
-gf-nishida-16, 63.262113
-gf-nishida-8, 55.481491
-gf-nishida-region-16-1, 330.527060
-gf-nishida-region-16-2, 656.656587
-gf-nishida-region-16-3, 1075.200172
-gf-nishida-region-16-4, 3205.832612
+gf-complete-32, 0.6319812
+gf-complete-64, 0.362041
+gf-plank-8, 4.730867
+gf-plank-16, 5.2499032
+gf-plank-32, 0.0599758
+gf-plank-logtable-16, 9.3484308
+gf-ff-32, 0.4495552
+gf-ff-64, 0.451065
+gf-sensor608-8, 10.7959406
+gf-nishida-16, 12.6524226
+gf-nishida-8, 11.0962982
+gf-nishida-region-16-1, 66.011651
+gf-nishida-region-16-2, 131.401273
+gf-nishida-region-16-3, 215.073412
+gf-nishida-region-16-4-NEON, 641.317507
+

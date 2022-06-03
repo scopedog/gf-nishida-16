@@ -164,16 +164,6 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
-	// Load tables
-	tb_a_0_l = _mm_loadu_si128((__m128i *)(gf_tb + 0));
-	tb_a_0_h = _mm_loadu_si128((__m128i *)(gf_tb + 16));
-	tb_a_1_l = _mm_loadu_si128((__m128i *)(gf_tb + 32));
-	tb_a_1_h = _mm_loadu_si128((__m128i *)(gf_tb + 48));
-	tb_a_2_l = _mm_loadu_si128((__m128i *)(gf_tb + 64));
-	tb_a_2_h = _mm_loadu_si128((__m128i *)(gf_tb + 80));
-	tb_a_3_l = _mm_loadu_si128((__m128i *)(gf_tb + 96));
-	tb_a_3_h = _mm_loadu_si128((__m128i *)(gf_tb + 112));
-
 	// Start measuring elapsed time
 	gettimeofday(&start, NULL); // Get start time
 
@@ -181,6 +171,17 @@ main(int argc, char **argv)
 	for (i = 0; i < REPEAT; i++) {
 		_b = (uint8_t *)b;
 		_d = (uint8_t *)d;
+
+		// Load tables
+		tb_a_0_l = _mm_loadu_si128((__m128i *)(gf_tb + 0));
+		tb_a_0_h = _mm_loadu_si128((__m128i *)(gf_tb + 16));
+		tb_a_1_l = _mm_loadu_si128((__m128i *)(gf_tb + 32));
+		tb_a_1_h = _mm_loadu_si128((__m128i *)(gf_tb + 48));
+		tb_a_2_l = _mm_loadu_si128((__m128i *)(gf_tb + 64));
+		tb_a_2_h = _mm_loadu_si128((__m128i *)(gf_tb + 80));
+		tb_a_3_l = _mm_loadu_si128((__m128i *)(gf_tb + 96));
+		tb_a_3_h = _mm_loadu_si128((__m128i *)(gf_tb + 112));
+
 		for (j = 0; j < SPACE; j += 32) { // Do every 128 * 2bit
 			// Use SIMD lookup
 			GF16lkupSIMD128(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
@@ -234,16 +235,6 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
-	// Load tables
-	tb_a_0_l = _mm256_loadu_si256((__m256i *)(gf_tb + 0));
-	tb_a_0_h = _mm256_loadu_si256((__m256i *)(gf_tb + 32));
-	tb_a_1_l = _mm256_loadu_si256((__m256i *)(gf_tb + 64));
-	tb_a_1_h = _mm256_loadu_si256((__m256i *)(gf_tb + 96));
-	tb_a_2_l = _mm256_loadu_si256((__m256i *)(gf_tb + 128));
-	tb_a_2_h = _mm256_loadu_si256((__m256i *)(gf_tb + 160));
-	tb_a_3_l = _mm256_loadu_si256((__m256i *)(gf_tb + 192));
-	tb_a_3_h = _mm256_loadu_si256((__m256i *)(gf_tb + 224));
-
 	// Start measuring elapsed time
 	gettimeofday(&start, NULL); // Get start time
 
@@ -251,6 +242,17 @@ main(int argc, char **argv)
 	for (i = 0; i < REPEAT; i++) {
 		_b = (uint8_t *)b;
 		_d = (uint8_t *)d;
+
+		// Load tables
+		tb_a_0_l = _mm256_loadu_si256((__m256i *)(gf_tb + 0));
+		tb_a_0_h = _mm256_loadu_si256((__m256i *)(gf_tb + 32));
+		tb_a_1_l = _mm256_loadu_si256((__m256i *)(gf_tb + 64));
+		tb_a_1_h = _mm256_loadu_si256((__m256i *)(gf_tb + 96));
+		tb_a_2_l = _mm256_loadu_si256((__m256i *)(gf_tb + 128));
+		tb_a_2_h = _mm256_loadu_si256((__m256i *)(gf_tb + 160));
+		tb_a_3_l = _mm256_loadu_si256((__m256i *)(gf_tb + 192));
+		tb_a_3_h = _mm256_loadu_si256((__m256i *)(gf_tb + 224));
+
 		for (j = 0; j < SPACE; j += 64) { // Do every 256 * 2bit
 			// Use SIMD lookup
 			GF16lkupSIMD256(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
@@ -300,16 +302,6 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
-	// Load tables
-	tb_a_0_l = vld1q_u8(gf_tb + 0);
-	tb_a_0_h = vld1q_u8(gf_tb + 16);
-	tb_a_1_l = vld1q_u8(gf_tb + 32);
-	tb_a_1_h = vld1q_u8(gf_tb + 48);
-	tb_a_2_l = vld1q_u8(gf_tb + 64);
-	tb_a_2_h = vld1q_u8(gf_tb + 80);
-	tb_a_3_l = vld1q_u8(gf_tb + 96);
-	tb_a_3_h = vld1q_u8(gf_tb + 112);
-
 	// Start measuring elapsed time
 	gettimeofday(&start, NULL); // Get start time
 
@@ -317,11 +309,22 @@ main(int argc, char **argv)
 	for (i = 0; i < REPEAT; i++) {
 		_b = (uint8_t *)b;
 		_d = (uint8_t *)d;
+
+		// Load tables
+		tb_a_0_l = vld1q_u8(gf_tb + 0);
+		tb_a_0_h = vld1q_u8(gf_tb + 16);
+		tb_a_1_l = vld1q_u8(gf_tb + 32);
+		tb_a_1_h = vld1q_u8(gf_tb + 48);
+		tb_a_2_l = vld1q_u8(gf_tb + 64);
+		tb_a_2_h = vld1q_u8(gf_tb + 80);
+		tb_a_3_l = vld1q_u8(gf_tb + 96);
+		tb_a_3_h = vld1q_u8(gf_tb + 112);
+
 		for (j = 0; j < SPACE; j += 32) { // Do every 128 * 2bit
 			// Use SIMD lookup
-			GF16lkupSIMD(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
-				tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h,
-				_b, _d);
+			GF16lkupSIMD128(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
+					tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h,
+					_b, _d);
 
 			_b += 32;
 			_d += 32;
