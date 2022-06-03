@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include <malloc_np.h>
 #include <sys/time.h>
 #include "common.h"
 #include "gf.h"
@@ -22,7 +23,7 @@ main(int argc, char **argv)
 	GF16init();
 
 	// Allocate b and c
-	if ((b = (uint16_t *)malloc(SPACE * 3)) == NULL) {
+	if ((b = (uint16_t *)aligned_alloc(64, SPACE * 3)) == NULL) {
 		perror("malloc");
 		exit(1);
 	}
