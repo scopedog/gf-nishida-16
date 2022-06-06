@@ -15,10 +15,10 @@ gf-aes-gcm-128, 0.556129
 gf-sensor608-8, 39.3947852
 gf-nishida-8, 39.3686786
 gf-nishida-16, 12.6014038
-gf-nishida-region-16-1, 65.852247
-gf-nishida-region-16-2, 131.332412
-gf-nishida-region-16-3, 215.019805
-gf-nishida-region-16-4-NEON, 640.246095
+gf-nishida-region-16-1, 66.106530
+gf-nishida-region-16-2, 114.191404
+gf-nishida-region-16-3, 214.872447
+gf-nishida-region-16-4-NEON, 638.868803
 
 
 Division
@@ -34,8 +34,7 @@ gf-ff-64, 0.451065
 gf-sensor608-8, 10.7959406
 gf-nishida-16, 12.6524226
 gf-nishida-8, 11.0962982
-gf-nishida-region-16-1, 65.877424
-gf-nishida-region-16-2, 131.459201
-gf-nishida-region-16-3, 215.024095
-gf-nishida-region-16-4-NEON, 640.606574
-
+gf-nishida-region-16-1, 66.155867
+gf-nishida-region-16-2, 114.599546
+gf-nishida-region-16-3, 214.914342
+gf-nishida-region-16-4-NEON, 638.882355

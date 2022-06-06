@@ -1,5 +1,33 @@
-include Makefile.pre
+include ../../common/Makefile.inc
 
-CFLAGS	+= 
+ARCH		!= uname -m
+EXECUTABLE	= gf-bench
+MAIN		= gf-bench.c
+INTERFACES	= ../../common/gf.c ../../common/mt19937-64.c
+SRCS		= $(MAIN) $(INTERFACES)
+OBJS		= $(SRCS:.c=.o)
+LIBS		= 
+LIBPATH		= 
+INCPATH		= -I../../common/
+CFLAGS		= -Wall $(OPTFLAGS) -D_$(ARCH)_ $(INCPATH)
 
-include Makefile.post
+##################################################################
+
+.c.o:
+	$(CC) -c $(CFLAGS) $< -o $@
+
+$(EXECUTABLE): $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LIBPATH) $(LIBS)
+
+all: $(EXECUTABLE)
+
+clean:
+	rm -f *.o *.core $(EXECUTABLE) $(LIBRARAY)
+
+depend:
+	$(MKDEP) $(CFLAGS) $(SRCS)
+
+bench: $(EXECUTABLE)
+	@basename `pwd`
+	@./$(EXECUTABLE)
+

@@ -1,5 +1,37 @@
-include Makefile.pre
+include ../../common/Makefile.inc
 
-CFLAGS	+= -mssse3 -mavx2
+ARCH		!= uname -m
+#EXECUTABLE	= gf-bench
+#MAIN		= gf-bench.c
+INTERFACES	= ../../common/gf.c ../../common/mt19937-64.c
+#SRCS		= $(MAIN) $(INTERFACES)
+#OBJS		= $(SRCS:.c=.o)
+INTF_OBJS	= $(INTERFACES:.c=.o)
+LIBS		= 
+LIBPATH		= 
+INCPATH		= -I../../common/
+CFLAGS		= -Wall $(OPTFLAGS) -D_$(ARCH)_ $(INCPATH)
 
-include Makefile.post
+AVX_CFLAGS	= $(CFLAGS) -mavx2
+SSE_CFLAGS	= $(CFLAGS) -mssse3
+
+##################################################################
+
+all: gf-bench gf-bench-sse
+
+gf-bench: $(INTERFACES) gf-bench.c
+	$(CC) -o $@ $(INTERFACES) $@.c $(AVX_CFLAGS) $(LIBPATH) $(LIBS)
+
+gf-bench-sse: $(INTERFACES) gf-bench-sse.c
+	$(CC) -o $@ $(INTERFACES) $@.c $(SSE_CFLAGS) $(LIBPATH) $(LIBS)
+
+clean:
+	rm -f *.o *.core gf-bench gf-bench-sse $(LIBRARAY)
+
+depend:
+	$(MKDEP) $(CFLAGS) $(SRCS)
+
+bench: gf-bench gf-bench-sse
+	@basename `pwd`
+	@./gf-bench
+	@./gf-bench-sse

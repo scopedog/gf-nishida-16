@@ -16,11 +16,11 @@ gf-sensor608-8, 2405.045334
 gf-solaris-128, 97.750401
 gf-nishida-8, 2386.058706
 gf-nishida-16, 1397.351310
-gf-nishida-region-16-1, 1369.507959
-gf-nishida-region-16-2, 3822.424492
-gf-nishida-region-16-3, 3733.005529
-gf-nishida-region-16-4-SSE, 9214.118477
-gf-nishida-region-16-4-AVX, 13553.148460
+gf-nishida-region-16-1, 1420.105476
+gf-nishida-region-16-2, 3710.879036
+gf-nishida-region-16-3, 3722.158328
+gf-nishida-region-16-4-SSE, 9331.673559
+gf-nishida-region-16-4-AVX, 13683.766029
 
 
 Division
@@ -36,9 +36,8 @@ gf-ff-64, 17.682573
 gf-sensor608-8, 935.440877
 gf-nishida-8, 1667.438508
 gf-nishida-16, 1369.197025
-gf-nishida-region-16-1, 1427.098539
-gf-nishida-region-16-2, 3849.624060
-gf-nishida-region-16-3, 3724.495029
-gf-nishida-region-16-4-SSE, 9524.358733
-gf-nishida-region-16-4-AVX, 14873.387385
-
+gf-nishida-region-16-1, 1425.429835
+gf-nishida-region-16-2, 3716.233626
+gf-nishida-region-16-3, 3728.112810
+gf-nishida-region-16-4-SSE, 9480.656313
+gf-nishida-region-16-4-AVX, 13754.345245
