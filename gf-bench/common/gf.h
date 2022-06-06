@@ -109,6 +109,15 @@ GF16lkupSIMD128(const __m128i tb_a_0_l, const __m128i tb_a_0_h,
 	input_0 = _mm_loadu_si128((__m128i *)input);
 	input_1 = _mm_loadu_si128((__m128i *)(input + 16));
 
+#if 0
+	// Pack low and high bytes of inputs to input_l and input_h
+	v_0 = _mm_shuffle_epi8(input_0,
+		_mm_set_epi32(0x0f0d0b09, 0x07050301, 0x0e0c0a08, 0x06040200));
+	v_1 = _mm_shuffle_epi8(input_1,
+		_mm_set_epi32(0x0f0d0b09, 0x07050301, 0x0e0c0a08, 0x06040200));
+	input_l = _mm_unpacklo_epi64(v_0, v_1);
+	input_h = _mm_unpackhi_epi64(v_0, v_1);
+#else
 	// Pack low bytes of inputs to input_l
 	tmp = _mm_set1_epi16(0x00ff);
 	v_0 = _mm_and_si128(input_0, tmp);
@@ -119,6 +128,7 @@ GF16lkupSIMD128(const __m128i tb_a_0_l, const __m128i tb_a_0_h,
 	v_0 = _mm_srli_epi16(input_0, 8);
 	v_1 = _mm_srli_epi16(input_1, 8);
 	input_h = _mm_packus_epi16(v_0, v_1);
+#endif
 
 	// Retrieve low 4bit of each byte from input_l
 	tmp = _mm_set1_epi8(0x0f);
@@ -304,6 +314,7 @@ GF16lkupSIMD128(const uint8x16_t tb_a_0_l, const uint8x16_t tb_a_0_h,
 }
 #endif
 
+#if defined(_amd64_) || defined(_x86_64_) || defined(_arm64_)
 // Show each byte of v128_t
 static inline void
 mm_print128_8(const char *str, v128_t var)
@@ -324,6 +335,7 @@ mm_print128_8(const char *str, v128_t var)
 		val[14], val[15]);
 #endif
 }
+#endif
 
 
 #endif // _GF_H_

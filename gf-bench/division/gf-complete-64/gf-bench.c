@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
-#include <malloc_np.h>
+#include <malloc.h>
 #include <sys/time.h>
 #include "gf_complete.h"
 #include "common.h"

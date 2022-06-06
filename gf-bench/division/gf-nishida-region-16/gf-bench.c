@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <malloc.h>
 #include <time.h>
-#include <malloc_np.h>
 #include <sys/time.h>
 #include "common.h"
 #include "gf.h"

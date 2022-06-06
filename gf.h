@@ -304,6 +304,7 @@ GF16lkupSIMD128(const uint8x16_t tb_a_0_l, const uint8x16_t tb_a_0_h,
 }
 #endif
 
+#if defined(_amd64_) || defined(_x86_64_) || defined(_arm64_)
 // Show each byte of v128_t
 static inline void
 mm_print128_8(const char *str, v128_t var)
@@ -324,6 +325,7 @@ mm_print128_8(const char *str, v128_t var)
 		val[14], val[15]);
 #endif
 }
+#endif
 
 
 #endif // _GF_H_
