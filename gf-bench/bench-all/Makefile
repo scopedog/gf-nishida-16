@@ -1,6 +1,6 @@
 include ../common/Makefile.inc
 
-ARCH		!= uname -m
+ARCH		!= ../common/det-arch.sh
 EXECUTABLE	= gf-bench-all
 MAIN		= $(EXECUTABLE).c
 INTERFACES	= 

@@ -2,9 +2,10 @@
 #define _GF_H_
 
 #include <stdint.h>
-#if defined(_amd64_) || defined(_x86_64_)
+#if defined(__SSSE3__) || defined(__AVX2__)
 #include <immintrin.h>
 #elif defined(_arm64_)
+//#elif defined(__ARM_NEON__) // Clang for arm64 does not support -march=native
 #include <arm_neon.h>
 #endif
 
@@ -78,7 +79,7 @@ uint8_t		*GF16crt4bitRegTbl256(uint16_t, int);
 /************************************************************
 	Inline functions
 ************************************************************/
-#if defined(_amd64_) || defined(_x86_64_) // SSE/AVX
+#if defined(__SSSE3__) || defined(__AVX2__)
 
 // Definitions 
 typedef __m128i	v128_t;
@@ -314,7 +315,7 @@ GF16lkupSIMD128(const uint8x16_t tb_a_0_l, const uint8x16_t tb_a_0_h,
 }
 #endif
 
-#if defined(_amd64_) || defined(_x86_64_) || defined(_arm64_)
+#if defined(__SSSE3__) || defined(__AVX2__) || defined(_arm64_)
 // Show each byte of v128_t
 static inline void
 mm_print128_8(const char *str, v128_t var)

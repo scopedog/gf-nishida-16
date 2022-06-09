@@ -1,6 +1,6 @@
 include ../../common/Makefile.inc
 
-ARCH		!= uname -m
+ARCH		= arm64
 EXECUTABLE	= gf-bench
 MAIN		= gf-bench.c
 INTERFACES	= ../../common/gf.c ../../common/mt19937-64.c

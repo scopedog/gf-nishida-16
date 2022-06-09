@@ -102,6 +102,7 @@ main(int argc, char **argv)
 	// Don't forget this if you called GF16crtRegTbl()
 	free(gf_a);
 
+#if defined(__SSSE3__) || defined(__AVX2__)
 	// From now on, we need this
 	uint8_t	*gf_tb;
 
@@ -191,4 +192,5 @@ main(int argc, char **argv)
 		putchar('\n');
 		exit(1);
 	}
+#endif
 }

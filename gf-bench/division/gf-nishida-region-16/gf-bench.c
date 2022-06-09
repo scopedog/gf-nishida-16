@@ -184,8 +184,7 @@ main(int argc, char **argv)
 	// From now on, we need this
 	uint8_t	*gf_tb;
 
-#if defined(_amd64_) || defined(_x86_64_) // SSE and AVX
-#if 0
+#if 0 // SSE
 {
 	/*** 4bit multi table region technique by SSSE3 ***/
 
@@ -276,6 +275,7 @@ main(int argc, char **argv)
 }
 #endif
 
+#if defined(__AVX2__)
 {
 	/*** 4bit multi table region technique by AVX2 ***/
 
@@ -363,8 +363,8 @@ main(int argc, char **argv)
 		exit(1);
 	}
 }
-
 #elif defined(_arm64_) // NEON
+{
 	/*** 4bit multi table region technique by NEON ***/
 
 	uint8_t		*_b, *_d;
@@ -450,6 +450,7 @@ main(int argc, char **argv)
 		putchar('\n');
 		exit(1);
 	}
+}
 #endif
 
 #if 0	// Comment in if you want to compare SIMD and non-SIMD

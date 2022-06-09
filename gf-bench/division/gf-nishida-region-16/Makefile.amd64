@@ -1,6 +1,6 @@
 include ../../common/Makefile.inc
 
-ARCH		!= uname -m
+ARCH		= amd64
 #EXECUTABLE	= gf-bench
 #MAIN		= gf-bench.c
 INTERFACES	= ../../common/gf.c ../../common/mt19937-64.c
@@ -12,7 +12,7 @@ LIBPATH		=
 INCPATH		= -I../../common/
 CFLAGS		= -Wall $(OPTFLAGS) -D_$(ARCH)_ $(INCPATH)
 
-AVX_CFLAGS	= $(CFLAGS) -mavx2
+AVX_CFLAGS	= $(CFLAGS) -march=native
 SSE_CFLAGS	= $(CFLAGS) -mssse3
 
 ##################################################################

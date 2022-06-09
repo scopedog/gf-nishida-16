@@ -1,4 +1,4 @@
-ARCH	!= uname -m
+ARCH	!= ../../common/det-arch.sh
 
 all:
 	make -f Makefile.$(ARCH)

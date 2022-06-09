@@ -62,6 +62,7 @@ BenchGfNishidaRegion16()
 {
 	char		buf[BUFSIZ], *p, *q;
 	int		n, idx, err = 0;
+	int64_t		sse_idx, avx_idx;
 	uint64_t	bench_res[5];
 	FILE		*fp = NULL;
 
@@ -69,6 +70,7 @@ BenchGfNishidaRegion16()
 	memset(bench_res, 0, sizeof(bench_res));
 
 	// Start benchmark 
+	sse_idx = avx_idx = -1;
 	for (n = 0; n < num_repeat; n++) {
 		idx = 0;
 		if ((fp = popen("make bench 2> /dev/null", "r")) == NULL) {
@@ -86,6 +88,17 @@ BenchGfNishidaRegion16()
 			// Check if buf contains ':'
 			if ((q = strrchr(p, ':')) == NULL) {
 				continue;
+			}
+
+			// Check SSE and AVX indices
+			if (n == 0) {
+				*q = '\0';
+				if (strstr(p, "SSE") != NULL) {
+					sse_idx = idx;
+				}
+				else if (strstr(p, "AVX") != NULL) {
+					avx_idx = idx;
+				}
 			}
 
 			// Retrieve result
@@ -107,13 +120,17 @@ BenchGfNishidaRegion16()
 			(double)(SPACE * REPEAT) / ((double)bench_res[idx] /
 				(double)num_repeat));
 	}
-#if defined(_amd64_) || defined(_x86_64_) // SSE/AVX
-	printf("gf-nishida-region-16-4-AVX, %f\n",
-		(double)(SPACE * REPEAT) / ((double)bench_res[3] /
-				(double)num_repeat));
-	printf("gf-nishida-region-16-4-SSE, %f\n",
-		(double)(SPACE * REPEAT) / ((double)bench_res[4] /
-				(double)num_repeat));
+#if defined(_amd64_) // SSE/AVX
+	if (sse_idx >= 0) {
+		printf("gf-nishida-region-16-4-SSE, %f\n",
+			(double)(SPACE * REPEAT) / ((double)bench_res[sse_idx] /
+					(double)num_repeat));
+	}
+	if (avx_idx >= 0) {
+		printf("gf-nishida-region-16-4-AVX, %f\n",
+			(double)(SPACE * REPEAT) / ((double)bench_res[avx_idx] /
+					(double)num_repeat));
+	}
 #elif defined(_arm64_) // NEON
 	printf("gf-nishida-region-16-4-NEON, %f\n",
 		(double)(SPACE * REPEAT) / ((double)bench_res[3] /
