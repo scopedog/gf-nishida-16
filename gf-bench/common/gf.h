@@ -84,15 +84,6 @@ uint8_t		*GF16crt4bitRegTbl256(uint16_t, int);
 // Definitions 
 typedef __m128i	v128_t;
 
-// Shift left 4bits for __m256i
-static inline __m256i
-ShiftL4_256(__m256i v)
-{
-	__m256i mask = _mm256_permute2x128_si256(v, v, _MM_SHUFFLE(0, 0, 3, 0));
-
-	return _mm256_alignr_epi8(v, mask, 16 - 4);
-}
-
 // Get GF(2^16) result by lookup by SSE -- call every 32bytes 
 static inline void
 GF16lkupSIMD128(const __m128i tb_a_0_l, const __m128i tb_a_0_h,

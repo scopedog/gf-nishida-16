@@ -1,5 +1,0 @@
-include Makefile.pre
-
-CFLAGS	+= 
-
-include Makefile.post
