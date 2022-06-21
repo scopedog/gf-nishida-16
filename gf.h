@@ -46,7 +46,8 @@
 #define GF16crtSpltRegTblDivR(a)	GF16crtSpltRegTbl(a, 2)
 
 #define GF16LkupRT(gf_a, x)		gf_a[(x)]
-#define GF16LkupSRT(gf_a_l, gf_a_h, x)	(gf_a_h[(x) >> 8] ^ gf_a_l[(x) & 0xff])
+#define GF16LkupSRT(gf_a_l, gf_a_h, x)	\
+		((gf_a_h)[(x) >> 8] ^ (gf_a_l)[(x) & 0xff])
 
 /************************************************************
 	Variables
