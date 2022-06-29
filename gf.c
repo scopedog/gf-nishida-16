@@ -506,7 +506,7 @@ GF16crt4bitRegTbl256(uint16_t a, int type)
 	tb_0_l = NULL;
 
 	// Allocate table
-	if ((tb_0_l = (uint8_t *)aligned_alloc(64, 512)) == NULL) {
+	if ((tb_0_l = (uint8_t *)aligned_alloc(64, 256)) == NULL) {
 		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
 			__func__, strerror(errno));
 		return NULL;
