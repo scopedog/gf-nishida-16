@@ -11,8 +11,8 @@
 
 /****************************************************************************
 
-	Simple and fast multiplication and division functions in GF(2^16)
-	based on table lookup(s).
+	Simple and fast multiplication and division functions in
+	GF(2^8) and GF(2^16) based on table lookup(s).
 	Memory consumption for the tables is as follows:
 		GF16mul(), GF16div(): 768kB
 		GF16crtRegTbl: 128kB (may fit L2 cache)
@@ -29,18 +29,38 @@
 ****************************************************************************/
 
 /************************************************************
-	Definitions
+	8bit: GF(2^8)
 ************************************************************/
 
+// Variables
+#ifdef _GF_MAIN_
+uint8_t		**GF8memMul = NULL;
+uint8_t		**GF8memDiv = NULL;
+#else
+extern uint8_t	**GF8memMul;
+extern uint8_t	**GF8memDiv;
+#endif
+
+// Macros
+#define GF8mul(a, b)	(GF8memMul[(a)][(b)])
+#define GF8div(a, b)	(GF8memDiv[(a)][(b)])
+
+// Functions
+void	GF8init(void); 
+
+/************************************************************
+	16bit: GF(2^16)
+************************************************************/
+
+// Macros 
 // To achieve fast computation, we do not check if a, b == 0
 // CAUTION: DO NOT USE b = 0 for GF16div(a, b). IT DOES NOT WORK CORRECTLY.
 #define	GF16mul(a, b)	(GF16memL[GF16memIdx[(a)] + GF16memIdx[(b)]])
 #define	GF16div(a, b)	(GF16memH[GF16memIdx[(a)] - GF16memIdx[(b)]])
 
-// Some macros for simplification 
-#define GF16crtRegTblMul(a)	GF16crtRegTbl(a, 0)
-#define GF16crtRegTblDivL(a)	GF16crtRegTbl(a, 1)
-#define GF16crtRegTblDivR(a)	GF16crtRegTbl(a, 2)
+#define GF16crtRegTblMul(a)		GF16crtRegTbl(a, 0)
+#define GF16crtRegTblDivL(a)		GF16crtRegTbl(a, 1)
+#define GF16crtRegTblDivR(a)		GF16crtRegTbl(a, 2)
 #define GF16crtSpltRegTblMul(a)		GF16crtSpltRegTbl(a, 0)
 #define GF16crtSpltRegTblDivL(a)	GF16crtSpltRegTbl(a, 1)
 #define GF16crtSpltRegTblDivR(a)	GF16crtSpltRegTbl(a, 2)
@@ -49,39 +69,24 @@
 #define GF16LkupSRT(gf_a_l, gf_a_h, x)	\
 		((gf_a_h)[(x) >> 8] ^ (gf_a_l)[(x) & 0xff])
 
-/************************************************************
-	Variables
-************************************************************/
-
+// Variables
 #ifdef _GF_MAIN_
-uint8_t		**GF8memMul = NULL;
-uint8_t		**GF8memDiv = NULL;
 uint16_t	*GF16memL = NULL, *GF16memH = NULL;
 int		*GF16memIdx = NULL;
-
 #else
-extern uint8_t	**GF8memMul;
-extern uint8_t	**GF8memDiv;
 extern uint16_t	*GF16memL, *GF16memH;
 extern int	*GF16memIdx;
 #endif
 
-/************************************************************
-	Functions
-************************************************************/
-
-// 16bit
+// Functions
 void		GF16init(void); 
 uint16_t	*GF16crtRegTbl(uint16_t, int);
 uint16_t	*GF16crtSpltRegTbl(uint16_t, int);
 uint8_t		*GF16crt4bitRegTbl(uint16_t, int);
 uint8_t		*GF16crt4bitRegTbl256(uint16_t, int);
 
-/************************************************************
-	Inline functions
-************************************************************/
+// Inline functions
 #if defined(__SSSE3__) || defined(__AVX2__)
-
 // Definitions 
 typedef __m128i	v128_t;
 

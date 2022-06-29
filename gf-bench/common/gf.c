@@ -52,23 +52,80 @@
 #include "gf.h"
 #undef	_GF_MAIN_
 
+
 /************************************************************
-	Definitions
+	8bit
+************************************************************/
+
+// Definitions for GF8
+#define GF8_PRIM	487	// Prim poly (others are 285, 299, 301, 333, ...
+#define GF8_SIZE	256	// = 8bit
+
+// Initialize 8bit GF
+void
+GF8init(void)
+{
+	int		i, j;
+	uint8_t		*GF8memL, *GF8memH;
+	int		*GF8memIdx;
+	uint8_t		t, *p;
+	uint32_t	n;
+
+	// Allocate memory
+	GF8memL = (uint8_t *)malloc(sizeof(uint8_t) * GF8_SIZE * 4);
+	GF8memH = GF8memL + GF8_SIZE - 1; // Second half
+	GF8memIdx = (int *)malloc(sizeof(int) * GF8_SIZE);
+	GF8memMul = (uint8_t **)malloc(sizeof(uint8_t*) * GF8_SIZE * 2);
+	GF8memDiv = GF8memMul + GF8_SIZE;
+	p = (uint8_t *)malloc(sizeof(uint8_t) * GF8_SIZE * GF8_SIZE * 2);
+	for (i = 0; i < GF8_SIZE; i++) {
+		GF8memMul[i] = p;
+		p += GF8_SIZE;
+		GF8memDiv[i] = p;
+		p += GF8_SIZE;
+	}
+	GF8memL[0] = 1;
+
+	// Set GF8mem and GF8memIdx
+	for (i = 0; i < GF8_SIZE - 1;) {
+		n = (uint32_t)GF8memL[i] << 1;
+		i++;
+		GF8memL[i] = t = (uint8_t)((n >= GF8_SIZE) ? n ^ GF8_PRIM : n);
+		GF8memIdx[t] = i;
+	}
+	GF8memIdx[0] = (GF8_SIZE << 1) - 1;
+	GF8memIdx[1] = 0;
+
+	// Copy GF8memL to GF8memH
+	memcpy(GF8memH, GF8memL, sizeof(uint8_t) * (GF8_SIZE - 1));
+
+	// Fill remaining after GF8memH with zero
+	memset(&GF8memL[(GF8_SIZE << 1) - 2], 0,
+		sizeof(uint8_t) * ((GF8_SIZE << 1) + 2));
+
+	// Set GF8memMul and GF8memDiv
+	for (i = 0; i < GF8_SIZE; i++) {
+		for (j = 0; j < GF8_SIZE; j++) {
+			GF8memMul[i][j] = GF8memL[GF8memIdx[i] + GF8memIdx[j]];
+			GF8memDiv[i][j] = GF8memH[GF8memIdx[i] - GF8memIdx[j]];
+		}
+	}
+
+	// Free GF8memL (and GF8memH)
+	free(GF8memL);
+}
+
+/************************************************************
+	16bit
 ************************************************************/
 
 // Definitions for GF16
 #define	GF16_PRIM	69643	// Prim poly: 0x1100b = x^16 + x^12 + x^3 + x +1
 #define	GF16_SIZE	65536	// = 16bit 
-
 /*
 	For more primitive polynomials, see:
 	http://web.eecs.utk.edu/~plank/plank/papers/CS-07-593/primitive-polynomial-table.txt
 */
-
-
-/************************************************************
-	Functions
-************************************************************/
 
 // Initialize 16bit GF
 void
@@ -449,7 +506,7 @@ GF16crt4bitRegTbl256(uint16_t a, int type)
 	tb_0_l = NULL;
 
 	// Allocate table
-	if ((tb_0_l = (uint8_t *)aligned_alloc(64, 256)) == NULL) {
+	if ((tb_0_l = (uint8_t *)aligned_alloc(64, 512)) == NULL) {
 		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
 			__func__, strerror(errno));
 		return NULL;
