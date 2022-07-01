@@ -72,7 +72,7 @@ main(int argc, char **argv)
 	     This will run in L2 cache as gf_a is 128kB ***/
 
 	// Create region table for a
-	if ((gf_a = GF16crtRegTbl(a, 2)) == NULL) {
+	if ((gf_a = GF16crtRegTbl(a, 1)) == NULL) {
 		exit(1);
 	}
 
@@ -117,7 +117,7 @@ main(int argc, char **argv)
 
 #if defined(_REAL_USE_) // For real use, do this here, not inside loop
 	// Create 4 * 16 byte region tables for a
-	if ((gf_tb = GF16crt4bitRegTbl(a, 2)) == NULL) {
+	if ((gf_tb = GF16crt4bitRegTbl(a, 1)) == NULL) {
 		exit(1);
 	}
 #endif
@@ -133,7 +133,7 @@ main(int argc, char **argv)
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
 		// This is only for benchmarking purpose
 		// Create 4 * 16 byte region tables for a
-		if ((gf_tb = GF16crt4bitRegTbl(a, 2)) == NULL) {
+		if ((gf_tb = GF16crt4bitRegTbl(a, 1)) == NULL) {
 			exit(1);
 		}
 #endif

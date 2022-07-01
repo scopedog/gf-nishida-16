@@ -20,6 +20,7 @@ main(int argc, char **argv)
 
 	// Initialize GF
 	GF8init(); // 8bit
+GF8test();
 
 	// Allocate b and c
 	if ((b = (uint8_t *)malloc(SPACE * 2)) == NULL) {

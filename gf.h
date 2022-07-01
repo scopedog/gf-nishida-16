@@ -45,8 +45,11 @@ extern uint8_t	**GF8memDiv;
 #define GF8mul(a, b)	(GF8memMul[(a)][(b)])
 #define GF8div(a, b)	(GF8memDiv[(a)][(b)])
 
+#define GF8LkupRT(gf_a, x)	gf_a[(x)]
+
 // Functions
 void	GF8init(void); 
+uint8_t	*GF8crtRegTbl(uint8_t, int);
 
 /************************************************************
 	16bit: GF(2^16)

@@ -71,7 +71,7 @@ main(int argc, char **argv)
 
 #if defined(_REAL_USE_) // For real use, do this here, not inside loop
 	// Create region table for a
-	if ((gf_a = GF16crtRegTbl(a, 2)) == NULL) {
+	if ((gf_a = GF16crtRegTbl(a, 1)) == NULL) {
 		exit(1);
 	}
 #endif
@@ -84,7 +84,7 @@ main(int argc, char **argv)
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
 		// This is only for benchmarking purpose
 		// Create region table for a
-		if ((gf_a = GF16crtRegTbl(a, 2)) == NULL) {
+		if ((gf_a = GF16crtRegTbl(a, 1)) == NULL) {
 			exit(1);
 		}
 #endif
@@ -126,7 +126,7 @@ main(int argc, char **argv)
 	     This will run in L1 cache as gf_a_l and gf_a_h are 512B each ***/
 #if defined(_REAL_USE_) // For real use, do this here, not inside loop
 	// Create 2 * 512 byte region tables for a
-	if ((gf_a_l = GF16crtSpltRegTbl(a, 2)) == NULL) {
+	if ((gf_a_l = GF16crtSpltRegTbl(a, 1)) == NULL) {
 		exit(1);
 	}
 	gf_a_h = gf_a_l + 256; // Don't forget this
@@ -141,7 +141,7 @@ main(int argc, char **argv)
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
 		// This is only for benchmarking purpose
 		// Create 2 * 512 byte region tables for a
-		if ((gf_a_l = GF16crtSpltRegTbl(a, 2)) == NULL) {
+		if ((gf_a_l = GF16crtSpltRegTbl(a, 1)) == NULL) {
 			exit(1);
 		}
 		gf_a_h = gf_a_l + 256; // Don't forget this
@@ -197,7 +197,7 @@ main(int argc, char **argv)
 
 #if defined(_REAL_USE_) // For real use, do this here, not inside loop
 	// Create 4 * 16 byte region tables for a
-	if ((gf_tb = GF16crt4bitRegTbl(a, 2)) == NULL) {
+	if ((gf_tb = GF16crt4bitRegTbl(a, 1)) == NULL) {
 		exit(1);
 	}
 #endif
@@ -213,7 +213,7 @@ main(int argc, char **argv)
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
 		// This is only for benchmarking purpose
 		// Create 4 * 16 byte region tables for a
-		if ((gf_tb = GF16crt4bitRegTbl(a, 2)) == NULL) {
+		if ((gf_tb = GF16crt4bitRegTbl(a, 1)) == NULL) {
 			exit(1);
 		}
 #endif
@@ -288,7 +288,7 @@ main(int argc, char **argv)
 
 #if defined(_REAL_USE_) // For real use, do this here, not inside loop
 	// Create 4 * 16 byte region tables for a
-	if ((gf_tb = GF16crt4bitRegTbl256(a, 2)) == NULL) {
+	if ((gf_tb = GF16crt4bitRegTbl256(a, 1)) == NULL) {
 		exit(1);
 	}
 #endif
@@ -304,7 +304,7 @@ main(int argc, char **argv)
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
 		// This is only for benchmarking purpose
 		// Create 4 * 16 byte region tables for a
-		if ((gf_tb = GF16crt4bitRegTbl256(a, 2)) == NULL) {
+		if ((gf_tb = GF16crt4bitRegTbl256(a, 1)) == NULL) {
 			exit(1);
 		}
 #endif
@@ -376,7 +376,7 @@ main(int argc, char **argv)
 
 #if defined(_REAL_USE_) // For real use, do this here, not inside loop
 	// Create 4 * 16 byte region tables for a
-	if ((gf_tb = GF16crt4bitRegTbl(a, 2)) == NULL) {
+	if ((gf_tb = GF16crt4bitRegTbl(a, 1)) == NULL) {
 		exit(1);
 	}
 #endif
@@ -392,7 +392,7 @@ main(int argc, char **argv)
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
 		// This is only for benchmarking purpose
 		// Create 4 * 16 byte region tables for a
-		if ((gf_tb = GF16crt4bitRegTbl(a, 2)) == NULL) {
+		if ((gf_tb = GF16crt4bitRegTbl(a, 1)) == NULL) {
 			exit(1);
 		}
 #endif
@@ -464,7 +464,7 @@ main(int argc, char **argv)
 
 #if defined(_REAL_USE_) // For real use, do this here, not inside loop
 	// Create 4 * 16 byte region tables for a
-	if ((gf_tb = GF16crt4bitRegTbl(a, 2)) == NULL) {
+	if ((gf_tb = GF16crt4bitRegTbl(a, 1)) == NULL) {
 		exit(1);
 	}
 	
@@ -485,7 +485,7 @@ main(int argc, char **argv)
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
 		// This is only for benchmarking purpose
 		// Create 4 * 16 byte region tables for a
-		if ((gf_tb = GF16crt4bitRegTbl(a, 2)) == NULL) {
+		if ((gf_tb = GF16crt4bitRegTbl(a, 1)) == NULL) {
 			exit(1);
 		}
 	

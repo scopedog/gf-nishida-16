@@ -2,7 +2,7 @@ include ../../common/Makefile.inc
 
 EXECUTABLE	= gf-bench
 MAIN		= gf-bench.c
-INTERFACES	= gf.c ../../common/mt19937-64.c
+INTERFACES	= ../../common/gf.c ../../common/mt19937-64.c
 SRCS		= $(MAIN) $(INTERFACES)
 OBJS		= $(SRCS:.c=.o)
 LIBS		= 

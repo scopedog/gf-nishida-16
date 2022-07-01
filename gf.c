@@ -53,9 +53,9 @@
 #undef	_GF_MAIN_
 
 
-/************************************************************
+/**************************************************************************
 	8bit
-************************************************************/
+**************************************************************************/
 
 // Definitions for GF8
 #define GF8_PRIM	487	// Prim poly (others are 285, 299, 301, 333, ...
@@ -65,7 +65,7 @@
 void
 GF8init(void)
 {
-	int		i, j;
+	int		i, j, idx_i, idx_j;
 	uint8_t		*GF8memL, *GF8memH;
 	int		*GF8memIdx;
 	uint8_t		t, *p;
@@ -84,11 +84,11 @@ GF8init(void)
 		GF8memDiv[i] = p;
 		p += GF8_SIZE;
 	}
-	GF8memL[0] = 1;
+	GF8memL[0] = t = 1;
 
 	// Set GF8mem and GF8memIdx
 	for (i = 0; i < GF8_SIZE - 1;) {
-		n = (uint32_t)GF8memL[i] << 1;
+		n = (uint32_t)t << 1;
 		i++;
 		GF8memL[i] = t = (uint8_t)((n >= GF8_SIZE) ? n ^ GF8_PRIM : n);
 		GF8memIdx[t] = i;
@@ -105,19 +105,299 @@ GF8init(void)
 
 	// Set GF8memMul and GF8memDiv
 	for (i = 0; i < GF8_SIZE; i++) {
+		idx_i = GF8memIdx[i];
 		for (j = 0; j < GF8_SIZE; j++) {
-			GF8memMul[i][j] = GF8memL[GF8memIdx[i] + GF8memIdx[j]];
-			GF8memDiv[i][j] = GF8memH[GF8memIdx[i] - GF8memIdx[j]];
+			idx_j = GF8memIdx[j];
+			GF8memMul[i][j] = GF8memL[idx_i + idx_j];
+			GF8memDiv[i][j] = GF8memH[idx_i - idx_j];
 		}
 	}
 
-	// Free GF8memL (and GF8memH)
+	// Free temp space
 	free(GF8memL);
+	free(GF8memIdx);
 }
 
-/************************************************************
+/******************** For regional calculation ********************/ 
+
+// Create table for regional calculation such as:
+//     a * x[i]
+//     x[i] / a
+// This method may fit L2 cache and will be fast.
+//
+// Args:
+//     a: static value in regional calculation (or coefficient)
+//     type: 0: a * x[i]
+//           1: x[i] / a
+//
+// Return value:
+//     pointer to table or NULL if failed. Free it later.
+//
+// How to use:
+//    For a * x[i],
+//        uint8_t *gf_a = GF8crtRegTbl(a, 0);
+//        for (i = 0; i < N; i++) {
+//            y[i] = gf_a[x[i]]; // This is equal to GFmul(a, x[i]);
+//            // Or use y[i] = GF8LkupRT(gf_a, x[i]);
+//        }
+//        free(gf_a);
+//
+//    For x[i] / a,
+//        uint8_t *gf_a = GF8crtRegTbl(a, 2);
+//        for (i = 0; i < N; i++) {
+//            y[i] = gf_a[x[i]]; // This is equal to GFdiv(x[i], a);
+//            // Or use y[i] = GF8LkupRT(gf_a, x[i]);
+//        }
+//        free(gf_a);
+//
+uint8_t *
+GF8crtRegTbl(uint8_t a, int type)
+{
+	int	i;
+	uint8_t	*table = NULL;
+
+	// Allocate table
+	if ((table = (uint8_t *)
+			aligned_alloc(64, GF8_SIZE)) == NULL) {
+		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
+			__func__, strerror(errno));
+		return NULL;	
+	}
+
+	// Input values
+	switch (type) {
+	case 0: // a * x[i]
+		memcpy(table, GF8memMul[a], GF8_SIZE);
+		break;
+
+	case 1: // x[i] / a
+		// Input values
+		for (i = 0; i < GF8_SIZE; i++) {
+			table[i] = GF8memDiv[i][a];
+		}
+		break;
+
+	default:
+		fprintf(stderr, "Error: %s: Illegal second argument value: %d "
+			"(value must be 0, 1, or 2)\n",
+			__func__, type);
+		free(table);
+		return NULL;
+	}
+
+	return table;
+}
+
+// Create 4bit split tables for regional calculation such as:
+//     a * x[i]
+//     x[i] / a
+// This is basically used with SIMD (SSE/NEON).
+//
+// Args:
+//     a: static value in regional calculation (or coefficient)
+//     type: 0: a * x[i]
+//           1: x[i] / a
+//
+// Return value:
+//     pointer to lowest table or NULL if failed. Free it later.
+//
+uint8_t *
+GF8crt4bitRegTbl(uint8_t a, int type)
+{
+	int	i;
+	uint8_t	*tb_0, *tb_1, *a_addr;
+
+	// Initialize
+	tb_0 = NULL;
+
+	// Allocate table
+	if ((tb_0 = (uint8_t *)aligned_alloc(64, 16 * 2)) == NULL) {
+		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
+			__func__, strerror(errno));
+		return NULL;
+	}
+	tb_1 = tb_0 + 16;
+
+	// Input values
+	switch (type) {
+	case 0: // a * x[i]
+		a_addr = GF8memMul[a];
+
+		// Input values
+		for (i = 0; i < 16; i++) {
+			tb_0[i] = a_addr[i];
+			tb_1[i] = a_addr[i << 4];
+		}
+		break;
+
+	case 1: // x[i] / a
+		// Input values
+		for (i = 0; i < 16; i++) {
+			tb_0[i] = GF8div(i , a);
+			tb_1[i] = GF8div((i << 4), a);
+		}
+		break;
+
+	default:
+		fprintf(stderr, "Error: %s: Illegal second argument value: %d "
+			"(value must be 0, 1, or 2)\n",
+			__func__, type);
+		free(tb_0);
+		return NULL;
+	}
+
+	return tb_0;
+}
+
+// Test GF8
+void
+GF8test(void)
+{
+	int		i, j;
+	uint8_t		a, b, c, d, *tbl_0, *tbl_1;
+
+	for (i = 0; i < 256; i++) {
+		a = (uint8_t)i;
+		for (j = 1; j < 256; j++) {
+			b = (uint8_t)j;
+			c = GF8mul(a, b);
+			d = GF8div(c, b);
+
+			if (d != i) {
+				printf("GF8test: d (%d) != i (%d)\n",
+					d, i);
+				printf("i = %d, j = %d, c = %d, d = %d\n",
+					i, j, c, d);
+				exit(1);
+			}
+		}
+	}
+
+	a = 0;
+	do {
+		tbl_0 = GF8crt4bitRegTbl(a, 0);
+		tbl_1 = tbl_0 + 16;
+		for (i = 0; i < 256; i++) {
+			d = tbl_1[i >> 4] ^ tbl_0[i & 0xf];
+			if (d != GF8mul(a, i)) {
+				printf("GF8test: %d != GF8mul(%d, %d)\n",
+					d, a, i);
+				exit(1);
+			}
+		}
+		free(tbl_0);
+
+		if (a) {
+			tbl_0 = GF8crt4bitRegTbl(a, 1);
+			tbl_1 = tbl_0 + 16;
+			for (i = 0; i < 256; i++) {
+				d = tbl_1[i >> 4] ^ tbl_0[i & 0xf];
+				if (d != GF8div(i, a)) {
+					printf("GF8test: %d != GF8div(%d, %d)"
+					       "\n", d, i, a);
+					exit(1);
+				}
+			}
+			free(tbl_0);
+		}
+
+		a++;
+	} while (a);
+
+	puts("GF8test: Passed");
+}
+
+// Same as GF8crt4bitRegTbl() but for 256bit SIMD like AVX
+//
+// Args:
+//     a: static value in regional calculation (or coefficient)
+//     type: 0: a * x[i]
+//           1: x[i] / a
+//
+// Return value:
+//     pointer to lowest table or NULL if failed. Free it later.
+//
+uint8_t *
+GF8crt4bitRegTbl256(uint8_t a, int type)
+{
+	int		i, i16;
+	uint8_t		*tb_0_l, *tb_0_h, *tb_1_l, *tb_1_h;
+	uint8_t		*tb_2_l, *tb_2_h, *tb_3_l, *tb_3_h;
+	uint16_t	 *a_addr, tmp;
+
+	// Initialize
+	tb_0_l = NULL;
+
+	// Allocate table
+	if ((tb_0_l = (uint8_t *)aligned_alloc(64, 256)) == NULL) {
+		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
+			__func__, strerror(errno));
+		return NULL;
+	}
+	tb_0_h = tb_0_l + 32;
+	tb_1_l = tb_0_h + 32;
+	tb_1_h = tb_1_l + 32;
+	tb_2_l = tb_1_h + 32;
+	tb_2_h = tb_2_l + 32;
+	tb_3_l = tb_2_h + 32;
+	tb_3_h = tb_3_l + 32;
+
+	// Input values
+	switch (type) {
+	case 0: // a * x[i]
+		a_addr = GF16memL + GF16memIdx[a];
+
+		// Input values
+		for (i = 0, i16 = 16; i < 16; i++, i16++) {
+			tmp = a_addr[GF16memIdx[i]];
+			tb_0_l[i] = tb_0_l[i16] = tmp & 0xff;
+			tb_0_h[i] = tb_0_h[i16] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 4]];
+			tb_1_l[i] = tb_1_l[i16] = tmp & 0xff;
+			tb_1_h[i] = tb_1_h[i16] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 8]];
+			tb_2_l[i] = tb_2_l[i16] = tmp & 0xff;
+			tb_2_h[i] = tb_2_h[i16] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 12]];
+			tb_3_l[i] = tb_3_l[i16] = tmp & 0xff;
+			tb_3_h[i] = tb_3_h[i16] = tmp >> 8;
+		}
+		break;
+
+	case 1: // x[i] / a
+		a_addr = GF16memH - GF16memIdx[a];
+
+		// Input values
+		for (i = 0, i16 = 16; i < 16; i++, i16++) {
+			tmp = a_addr[GF16memIdx[i]];
+			tb_0_l[i] = tb_0_l[i16] = tmp & 0xff;
+			tb_0_h[i] = tb_0_h[i16] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 4]];
+			tb_1_l[i] = tb_1_l[i16] = tmp & 0xff;
+			tb_1_h[i] = tb_1_h[i16] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 8]];
+			tb_2_l[i] = tb_2_l[i16] = tmp & 0xff;
+			tb_2_h[i] = tb_2_h[i16] = tmp >> 8;
+			tmp = a_addr[GF16memIdx[i << 12]];
+			tb_3_l[i] = tb_3_l[i16] = tmp & 0xff;
+			tb_3_h[i] = tb_3_h[i16] = tmp >> 8;
+		}
+		break;
+
+	default:
+		fprintf(stderr, "Error: %s: Illegal second argument value: %d "
+			"(value must be 0, 1, or 2)\n",
+			__func__, type);
+		free(tb_0_l);
+		return NULL;
+	}
+
+	return tb_0_l;
+}
+
+/**************************************************************************
 	16bit
-************************************************************/
+**************************************************************************/
 
 // Definitions for GF16
 #define	GF16_PRIM	69643	// Prim poly: 0x1100b = x^16 + x^12 + x^3 + x +1
@@ -159,21 +439,17 @@ GF16init(void)
 		sizeof(uint16_t) * ((GF16_SIZE << 1) + 2));
 }
 
-/************************************************************
-	For regional calculation
-************************************************************/
+/******************** For regional calculation ********************/ 
 
 // Create table for regional calculation such as:
 //     a * x[i]
-//     a / x[i]
 //     x[i] / a
 // This method may fit L2 cache and will be fast.
 //
 // Args:
 //     a: static value in regional calculation (or coefficient)
 //     type: 0: a * x[i]
-//           1: a / x[i]
-//           2: x[i] / a
+//           1: x[i] / a
 //
 // Return value:
 //     pointer to table or NULL if failed. Free it later.
@@ -183,14 +459,6 @@ GF16init(void)
 //        uint16_t *gf_a = GF16crtRegTbl(a, 0);
 //        for (i = 0; i < N; i++) {
 //            y[i] = gf_a[x[i]]; // This is equal to GFmul(a, x[i]);
-//            // Or use y[i] = GF16LkupRT(gf_a, x[i]);
-//        }
-//        free(gf_a);
-//
-//    For a / x[i],
-//        uint16_t *gf_a = GF16crtRegTbl(a, 1);
-//        for (i = 0; i < N; i++) {
-//            y[i] = gf_a[x[i]]; // This is equal to GFdiv(a, x[i]);
 //            // Or use y[i] = GF16LkupRT(gf_a, x[i]);
 //        }
 //        free(gf_a);
@@ -229,16 +497,7 @@ GF16crtRegTbl(uint16_t a, int type)
 		}
 		break;
 
-	case 1: // a / x[i]
-		a_addr = GF16memH + GF16memIdx[a];
-
-		// Input values
-		for (i = 0; i < GF16_SIZE; i++) {
-			table[i] = *(a_addr - GF16memIdx[i]);
-		}
-		break;
-
-	case 2: // x[i] / a
+	case 1: // x[i] / a
 		a_addr = GF16memH - GF16memIdx[a];
 
 		// Input values
@@ -260,15 +519,13 @@ GF16crtRegTbl(uint16_t a, int type)
 
 // Create 8bit split tables for regional calculation such as:
 //     a * x[i]
-//     a / x[i]
 //     x[i] / a
 // This method may fit L1 cache and will be even faster.
 //
 // Args:
 //     a: static value in regional calculation (or coefficient)
 //     type: 0: a * x[i]
-//           1: a / x[i]
-//           2: x[i] / a
+//           1: x[i] / a
 //
 // Return value:
 //     pointer to lowest byte table or NULL if failed. Free it later.
@@ -281,17 +538,6 @@ GF16crtRegTbl(uint16_t a, int type)
 //        for (i = 0; i < N; i++) {
 //            xi = x[i];
 //            y[i] = gf_a_h[xi >> 8] ^ gf_a_l[xi & 0xff]; // = GFmul(a, x[i]);
-//            // Or use y[i] = GF16LkupSRT(gf_a_l, gf_a_h, xi);
-//        }
-//        free(gf_a_l);
-//
-//    For a / x[i],
-//        uint16_t *gf_a_l = GF16crtSpltRegTbl(a, 1);
-//        uint16_t *gf_a_h = gf_a_l + 256;
-//        uint16_t xi;
-//        for (i = 0; i < N; i++) {
-//            xi = x[i];
-//            y[i] = gf_a_h[xi >> 8] ^ gf_a_l[xi & 0xff]; // = GFdiv(a, x[i]);
 //            // Or use y[i] = GF16LkupSRT(gf_a_l, gf_a_h, xi);
 //        }
 //        free(gf_a_l);
@@ -339,17 +585,7 @@ GF16crtSpltRegTbl(uint16_t a, int type)
 		}
 		break;
 
-	case 1: // a / x[i]
-		a_addr = GF16memH + GF16memIdx[a];
-
-		// Input values
-		for (i = 0; i < 256; i++) {
-			tb_l[i] = *(a_addr - GF16memIdx[i]);
-			tb_h[i] = *(a_addr - GF16memIdx[i << 8]);
-		}
-		break;
-
-	case 2: // x[i] / a
+	case 1: // x[i] / a
 		a_addr = GF16memH - GF16memIdx[a];
 
 		// Input values
@@ -372,15 +608,13 @@ GF16crtSpltRegTbl(uint16_t a, int type)
 
 // Create 4bit split tables for regional calculation such as:
 //     a * x[i]
-//     a / x[i]
 //     x[i] / a
 // This is basically used with SIMD (SSE/NEON).
 //
 // Args:
 //     a: static value in regional calculation (or coefficient)
 //     type: 0: a * x[i]
-//           1: a / x[i]
-//           2: x[i] / a
+//           1: x[i] / a
 //
 // Return value:
 //     pointer to lowest table or NULL if failed. Free it later.
@@ -432,27 +666,7 @@ GF16crt4bitRegTbl(uint16_t a, int type)
 		}
 		break;
 
-	case 1: // a / x[i]
-		a_addr = GF16memH + GF16memIdx[a];
-
-		// Input values
-		for (i = 0; i < 16; i++) {
-			tmp = *(a_addr - GF16memIdx[i]);
-			tb_0_l[i] = tmp & 0xff;
-			tb_0_h[i] = tmp >> 8;
-			tmp = *(a_addr - GF16memIdx[i << 4]);
-			tb_1_l[i] = tmp & 0xff;
-			tb_1_h[i] = tmp >> 8;
-			tmp = *(a_addr - GF16memIdx[i << 8]);
-			tb_2_l[i] = tmp & 0xff;
-			tb_2_h[i] = tmp >> 8;
-			tmp = *(a_addr - GF16memIdx[i << 12]);
-			tb_3_l[i] = tmp & 0xff;
-			tb_3_h[i] = tmp >> 8;
-		}
-		break;
-
-	case 2: // x[i] / a
+	case 1: // x[i] / a
 		a_addr = GF16memH - GF16memIdx[a];
 
 		// Input values
@@ -488,8 +702,7 @@ GF16crt4bitRegTbl(uint16_t a, int type)
 // Args:
 //     a: static value in regional calculation (or coefficient)
 //     type: 0: a * x[i]
-//           1: a / x[i]
-//           2: x[i] / a
+//           1: x[i] / a
 //
 // Return value:
 //     pointer to lowest table or NULL if failed. Free it later.
@@ -541,27 +754,7 @@ GF16crt4bitRegTbl256(uint16_t a, int type)
 		}
 		break;
 
-	case 1: // a / x[i]
-		a_addr = GF16memH + GF16memIdx[a];
-
-		// Input values
-		for (i = 0, i16 = 16; i < 16; i++, i16++) {
-			tmp = *(a_addr - GF16memIdx[i]);
-			tb_0_l[i] = tb_0_l[i16] = tmp & 0xff;
-			tb_0_h[i] = tb_0_h[i16] = tmp >> 8;
-			tmp = *(a_addr - GF16memIdx[i << 4]);
-			tb_1_l[i] = tb_1_l[i16] = tmp & 0xff;
-			tb_1_h[i] = tb_1_h[i16] = tmp >> 8;
-			tmp = *(a_addr - GF16memIdx[i << 8]);
-			tb_2_l[i] = tb_2_l[i16] = tmp & 0xff;
-			tb_2_h[i] = tb_2_h[i16] = tmp >> 8;
-			tmp = *(a_addr - GF16memIdx[i << 12]);
-			tb_3_l[i] = tb_3_l[i16] = tmp & 0xff;
-			tb_3_h[i] = tb_3_h[i16] = tmp >> 8;
-		}
-		break;
-
-	case 2: // x[i] / a
+	case 1: // x[i] / a
 		a_addr = GF16memH - GF16memIdx[a];
 
 		// Input values
