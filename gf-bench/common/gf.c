@@ -143,7 +143,7 @@ GF8init(void)
 //        free(gf_a);
 //
 //    For x[i] / a,
-//        uint8_t *gf_a = GF8crtRegTbl(a, 2);
+//        uint8_t *gf_a = GF8crtRegTbl(a, 1);
 //        for (i = 0; i < N; i++) {
 //            y[i] = gf_a[x[i]]; // This is equal to GFdiv(x[i], a);
 //            // Or use y[i] = GF8LkupRT(gf_a, x[i]);
@@ -153,7 +153,6 @@ GF8init(void)
 uint8_t *
 GF8crtRegTbl(uint8_t a, int type)
 {
-	int	i;
 	uint8_t	*table = NULL;
 
 	// Allocate table
@@ -171,10 +170,7 @@ GF8crtRegTbl(uint8_t a, int type)
 		break;
 
 	case 1: // x[i] / a
-		// Input values
-		for (i = 0; i < GF8_SIZE; i++) {
-			table[i] = GF8memDiv[i][a];
-		}
+		memcpy(table, GF8memMul[GF8div(1, a)], GF8_SIZE);
 		break;
 
 	default:
@@ -231,10 +227,72 @@ GF8crt4bitRegTbl(uint8_t a, int type)
 		break;
 
 	case 1: // x[i] / a
+		a_addr = GF8memMul[GF8div(1, a)];
+
 		// Input values
 		for (i = 0; i < 16; i++) {
-			tb_0[i] = GF8div(i , a);
-			tb_1[i] = GF8div((i << 4), a);
+			tb_0[i] = a_addr[i];
+			tb_1[i] = a_addr[i << 4];
+		}
+		break;
+
+	default:
+		fprintf(stderr, "Error: %s: Illegal second argument value: %d "
+			"(value must be 0, 1, or 2)\n",
+			__func__, type);
+		free(tb_0);
+		return NULL;
+	}
+
+	return tb_0;
+}
+
+// Same as GF8crt4bitRegTbl() but for 256bit SIMD like AVX
+//
+// Args:
+//     a: static value in regional calculation (or coefficient)
+//     type: 0: a * x[i]
+//           1: x[i] / a
+//
+// Return value:
+//     pointer to lowest table or NULL if failed. Free it later.
+//
+uint8_t *
+GF8crt4bitRegTbl256(uint8_t a, int type)
+{
+	int	i, i_16;
+	uint8_t	*tb_0, *tb_1, *a_addr;
+
+	// Initialize
+	tb_0 = NULL;
+
+	// Allocate table
+	if ((tb_0 = (uint8_t *)aligned_alloc(64, 32 * 2)) == NULL) {
+		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
+			__func__, strerror(errno));
+		return NULL;
+	}
+	tb_1 = tb_0 + 32;
+
+	// Input values
+	switch (type) {
+	case 0: // a * x[i]
+		a_addr = GF8memMul[a];
+
+		// Input values
+		for (i = 0, i_16 = 16; i < 16; i++, i_16++) {
+			tb_0[i] = tb_0[i_16] = a_addr[i];
+			tb_1[i] = tb_1[i_16] = a_addr[i << 4];
+		}
+		break;
+
+	case 1: // x[i] / a
+		a_addr = GF8memMul[GF8div(1, a)];
+
+		// Input values
+		for (i = 0, i_16 = 16; i < 16; i++, i_16++) {
+			tb_0[i] = tb_0[i_16] = a_addr[i];
+			tb_1[i] = tb_1[i_16] = a_addr[i << 4];
 		}
 		break;
 
@@ -307,94 +365,6 @@ GF8test(void)
 	puts("GF8test: Passed");
 }
 
-// Same as GF8crt4bitRegTbl() but for 256bit SIMD like AVX
-//
-// Args:
-//     a: static value in regional calculation (or coefficient)
-//     type: 0: a * x[i]
-//           1: x[i] / a
-//
-// Return value:
-//     pointer to lowest table or NULL if failed. Free it later.
-//
-uint8_t *
-GF8crt4bitRegTbl256(uint8_t a, int type)
-{
-	int		i, i16;
-	uint8_t		*tb_0_l, *tb_0_h, *tb_1_l, *tb_1_h;
-	uint8_t		*tb_2_l, *tb_2_h, *tb_3_l, *tb_3_h;
-	uint16_t	 *a_addr, tmp;
-
-	// Initialize
-	tb_0_l = NULL;
-
-	// Allocate table
-	if ((tb_0_l = (uint8_t *)aligned_alloc(64, 256)) == NULL) {
-		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
-			__func__, strerror(errno));
-		return NULL;
-	}
-	tb_0_h = tb_0_l + 32;
-	tb_1_l = tb_0_h + 32;
-	tb_1_h = tb_1_l + 32;
-	tb_2_l = tb_1_h + 32;
-	tb_2_h = tb_2_l + 32;
-	tb_3_l = tb_2_h + 32;
-	tb_3_h = tb_3_l + 32;
-
-	// Input values
-	switch (type) {
-	case 0: // a * x[i]
-		a_addr = GF16memL + GF16memIdx[a];
-
-		// Input values
-		for (i = 0, i16 = 16; i < 16; i++, i16++) {
-			tmp = a_addr[GF16memIdx[i]];
-			tb_0_l[i] = tb_0_l[i16] = tmp & 0xff;
-			tb_0_h[i] = tb_0_h[i16] = tmp >> 8;
-			tmp = a_addr[GF16memIdx[i << 4]];
-			tb_1_l[i] = tb_1_l[i16] = tmp & 0xff;
-			tb_1_h[i] = tb_1_h[i16] = tmp >> 8;
-			tmp = a_addr[GF16memIdx[i << 8]];
-			tb_2_l[i] = tb_2_l[i16] = tmp & 0xff;
-			tb_2_h[i] = tb_2_h[i16] = tmp >> 8;
-			tmp = a_addr[GF16memIdx[i << 12]];
-			tb_3_l[i] = tb_3_l[i16] = tmp & 0xff;
-			tb_3_h[i] = tb_3_h[i16] = tmp >> 8;
-		}
-		break;
-
-	case 1: // x[i] / a
-		a_addr = GF16memH - GF16memIdx[a];
-
-		// Input values
-		for (i = 0, i16 = 16; i < 16; i++, i16++) {
-			tmp = a_addr[GF16memIdx[i]];
-			tb_0_l[i] = tb_0_l[i16] = tmp & 0xff;
-			tb_0_h[i] = tb_0_h[i16] = tmp >> 8;
-			tmp = a_addr[GF16memIdx[i << 4]];
-			tb_1_l[i] = tb_1_l[i16] = tmp & 0xff;
-			tb_1_h[i] = tb_1_h[i16] = tmp >> 8;
-			tmp = a_addr[GF16memIdx[i << 8]];
-			tb_2_l[i] = tb_2_l[i16] = tmp & 0xff;
-			tb_2_h[i] = tb_2_h[i16] = tmp >> 8;
-			tmp = a_addr[GF16memIdx[i << 12]];
-			tb_3_l[i] = tb_3_l[i16] = tmp & 0xff;
-			tb_3_h[i] = tb_3_h[i16] = tmp >> 8;
-		}
-		break;
-
-	default:
-		fprintf(stderr, "Error: %s: Illegal second argument value: %d "
-			"(value must be 0, 1, or 2)\n",
-			__func__, type);
-		free(tb_0_l);
-		return NULL;
-	}
-
-	return tb_0_l;
-}
-
 /**************************************************************************
 	16bit
 **************************************************************************/
@@ -418,15 +388,25 @@ GF16init(void)
 	GF16memL = (uint16_t *)malloc(sizeof(uint16_t) * GF16_SIZE * 4);
 	GF16memH = GF16memL + GF16_SIZE - 1; // Second half
 	GF16memIdx = (int *)malloc(sizeof(int) * GF16_SIZE);
-	GF16memL[0] = 1;
+	GF16memL[0] = n = 1;
 
 	// Set GF16memL and GF16memIdx
 	for (i = 0; i < GF16_SIZE - 1;) {
+#if 1
+		n <<= 1;
+		i++;
+		if (n >= GF16_SIZE) {
+			n ^= GF16_PRIM;
+		}
+		GF16memL[i] = (uint16_t)n;
+		GF16memIdx[n] = i;
+#else
 		n = (uint32_t)GF16memL[i] << 1;
 		i++;
 		GF16memL[i] = (uint16_t)
 			((n >= GF16_SIZE) ? n ^ GF16_PRIM : n);
 		GF16memIdx[GF16memL[i]] = i;
+#endif
 	}
 	GF16memIdx[0] = (GF16_SIZE << 1) - 1;
 	GF16memIdx[1] = 0;
@@ -464,7 +444,7 @@ GF16init(void)
 //        free(gf_a);
 //
 //    For x[i] / a,
-//        uint16_t *gf_a = GF16crtRegTbl(a, 2);
+//        uint16_t *gf_a = GF16crtRegTbl(a, 1);
 //        for (i = 0; i < N; i++) {
 //            y[i] = gf_a[x[i]]; // This is equal to GFdiv(x[i], a);
 //            // Or use y[i] = GF16LkupRT(gf_a, x[i]);
@@ -710,7 +690,7 @@ GF16crt4bitRegTbl(uint16_t a, int type)
 uint8_t *
 GF16crt4bitRegTbl256(uint16_t a, int type)
 {
-	int		i, i16;
+	int		i, i_16;
 	uint8_t		*tb_0_l, *tb_0_h, *tb_1_l, *tb_1_h;
 	uint8_t		*tb_2_l, *tb_2_h, *tb_3_l, *tb_3_h;
 	uint16_t	 *a_addr, tmp;
@@ -738,19 +718,19 @@ GF16crt4bitRegTbl256(uint16_t a, int type)
 		a_addr = GF16memL + GF16memIdx[a];
 
 		// Input values
-		for (i = 0, i16 = 16; i < 16; i++, i16++) {
+		for (i = 0, i_16 = 16; i < 16; i++, i_16++) {
 			tmp = a_addr[GF16memIdx[i]];
-			tb_0_l[i] = tb_0_l[i16] = tmp & 0xff;
-			tb_0_h[i] = tb_0_h[i16] = tmp >> 8;
+			tb_0_l[i] = tb_0_l[i_16] = tmp & 0xff;
+			tb_0_h[i] = tb_0_h[i_16] = tmp >> 8;
 			tmp = a_addr[GF16memIdx[i << 4]];
-			tb_1_l[i] = tb_1_l[i16] = tmp & 0xff;
-			tb_1_h[i] = tb_1_h[i16] = tmp >> 8;
+			tb_1_l[i] = tb_1_l[i_16] = tmp & 0xff;
+			tb_1_h[i] = tb_1_h[i_16] = tmp >> 8;
 			tmp = a_addr[GF16memIdx[i << 8]];
-			tb_2_l[i] = tb_2_l[i16] = tmp & 0xff;
-			tb_2_h[i] = tb_2_h[i16] = tmp >> 8;
+			tb_2_l[i] = tb_2_l[i_16] = tmp & 0xff;
+			tb_2_h[i] = tb_2_h[i_16] = tmp >> 8;
 			tmp = a_addr[GF16memIdx[i << 12]];
-			tb_3_l[i] = tb_3_l[i16] = tmp & 0xff;
-			tb_3_h[i] = tb_3_h[i16] = tmp >> 8;
+			tb_3_l[i] = tb_3_l[i_16] = tmp & 0xff;
+			tb_3_h[i] = tb_3_h[i_16] = tmp >> 8;
 		}
 		break;
 
@@ -758,19 +738,19 @@ GF16crt4bitRegTbl256(uint16_t a, int type)
 		a_addr = GF16memH - GF16memIdx[a];
 
 		// Input values
-		for (i = 0, i16 = 16; i < 16; i++, i16++) {
+		for (i = 0, i_16 = 16; i < 16; i++, i_16++) {
 			tmp = a_addr[GF16memIdx[i]];
-			tb_0_l[i] = tb_0_l[i16] = tmp & 0xff;
-			tb_0_h[i] = tb_0_h[i16] = tmp >> 8;
+			tb_0_l[i] = tb_0_l[i_16] = tmp & 0xff;
+			tb_0_h[i] = tb_0_h[i_16] = tmp >> 8;
 			tmp = a_addr[GF16memIdx[i << 4]];
-			tb_1_l[i] = tb_1_l[i16] = tmp & 0xff;
-			tb_1_h[i] = tb_1_h[i16] = tmp >> 8;
+			tb_1_l[i] = tb_1_l[i_16] = tmp & 0xff;
+			tb_1_h[i] = tb_1_h[i_16] = tmp >> 8;
 			tmp = a_addr[GF16memIdx[i << 8]];
-			tb_2_l[i] = tb_2_l[i16] = tmp & 0xff;
-			tb_2_h[i] = tb_2_h[i16] = tmp >> 8;
+			tb_2_l[i] = tb_2_l[i_16] = tmp & 0xff;
+			tb_2_h[i] = tb_2_h[i_16] = tmp >> 8;
 			tmp = a_addr[GF16memIdx[i << 12]];
-			tb_3_l[i] = tb_3_l[i16] = tmp & 0xff;
-			tb_3_h[i] = tb_3_h[i16] = tmp >> 8;
+			tb_3_l[i] = tb_3_l[i_16] = tmp & 0xff;
+			tb_3_h[i] = tb_3_h[i_16] = tmp >> 8;
 		}
 		break;
 
