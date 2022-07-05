@@ -16,8 +16,14 @@ main(int argc, char **argv)
 	// Variables
 	int		i, j;
 	struct timeval	start, end;
-	uint8_t		a, *b, *c, *d, *gf_a;
+	uint8_t		a, *b, *c, *d, *_b, *_d, *gf_a, *gf_tb;
 	uint64_t	*r;
+	__m128i		tb_a_l, tb_a_h;
+
+#if !defined(__SSSE3__)
+	fputs("Error: This program is only for SSE (SSSE3)\n", stderr);
+	exit(1);
+#endif
 
 	// Initialize GF
 	GF8init();
@@ -48,9 +54,6 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
-	// Start measuring elapsed time
-	gettimeofday(&start, NULL); // Get start time
-
 	// c = a * b = gf_a[b]
 	for (i = 0; i < REPEAT; i++) {
 		for (j = 0; j < SPACE; j++) {
@@ -61,27 +64,10 @@ main(int argc, char **argv)
 		}
 	}
 
-	// Get end time
-	gettimeofday(&end, NULL);
-
-#if 0
-	// Print result
-	printf("One step table lookup        : %ld\n",
-		((end.tv_sec * 1000000 + end.tv_usec) -
-		(start.tv_sec * 1000000 + start.tv_usec)));
-#endif
-
 	// Don't forget this if you called GF8crtRegTbl()
 	free(gf_a);
 
-#if defined(__SSSE3__) || defined(__AVX2__)
-	// From now on, we need this
-	uint8_t	*gf_tb;
-
 	/*** 4bit multi table region technique by SSSE3 ***/
-
-	uint8_t	*_b, *_d;
-	__m128i	tb_a_l, tb_a_h;
 
 	// Reset d
 	memset(d, 0, SPACE); 
@@ -154,5 +140,4 @@ main(int argc, char **argv)
 		putchar('\n');
 		exit(1);
 	}
-#endif
 }

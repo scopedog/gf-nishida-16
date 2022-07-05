@@ -16,8 +16,16 @@ main(int argc, char **argv)
 	// Variables
 	int		i, j;
 	struct timeval	start, end;
+	uint8_t		*_b, *_d, *gf_tb;
 	uint16_t	a, *b, *c, *d, *gf_a;
 	uint64_t	*r;
+	__m128i		tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h;
+	__m128i		tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
+
+#if !defined(__SSSE3__)
+	fputs("Error: This program is only for SSE (SSSE3)\n", stderr);
+	exit(1);
+#endif
 
 	// Initialize GF
 	GF16init();
@@ -40,34 +48,6 @@ main(int argc, char **argv)
 		r[i] = genrand64_int64();
 	}
 
-#if 0
-	/*** Two step table lookup technique ***/
-
-	// Set gf_a
-	gf_a = GF16memL + GF16memIdx[a];
-
-	// Start measuring elapsed time
-	gettimeofday(&start, NULL); // Get start time
-
-	// c = a * b = gf_a[GF16memIdx(b)]]
-	for (i = 0; i < REPEAT; i++) {
-		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
-			// Two step look up
-			// To avoid elimination by cc's -O2 option,
-			// input result into c[j]
-			c[j] = gf_a[GF16memIdx[b[j]]];
-		}
-	}
-
-	// Get end time
-	gettimeofday(&end, NULL);
-
-	// Print result
-	printf("Two step table lookup        : %ld\n",
-		((end.tv_sec * 1000000 + end.tv_usec) -
-		(start.tv_sec * 1000000 + start.tv_usec)));
-#endif
-
 	/*** One step table lookup technique
 	     This will run in L2 cache as gf_a is 128kB ***/
 
@@ -75,9 +55,6 @@ main(int argc, char **argv)
 	if ((gf_a = GF16crtRegTbl(a, 0)) == NULL) {
 		exit(1);
 	}
-
-	// Start measuring elapsed time
-	gettimeofday(&start, NULL); // Get start time
 
 	// c = a * b = gf_a[b]
 	for (i = 0; i < REPEAT; i++) {
@@ -92,25 +69,10 @@ main(int argc, char **argv)
 	// Get end time
 	gettimeofday(&end, NULL);
 
-#if 0
-	// Print result
-	printf("One step table lookup        : %ld\n",
-		((end.tv_sec * 1000000 + end.tv_usec) -
-		(start.tv_sec * 1000000 + start.tv_usec)));
-#endif
-
 	// Don't forget this if you called GF16crtRegTbl()
 	free(gf_a);
 
-#if defined(__SSSE3__) || defined(__AVX2__)
-	// From now on, we need this
-	uint8_t	*gf_tb;
-
 	/*** 4bit multi table region technique by SSSE3 ***/
-
-	uint8_t	*_b, *_d;
-	__m128i	tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h;
-	__m128i	tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
 
 	// Reset d
 	memset(d, 0, SPACE); 
@@ -193,5 +155,4 @@ main(int argc, char **argv)
 		putchar('\n');
 		exit(1);
 	}
-#endif
 }

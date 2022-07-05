@@ -53,7 +53,7 @@ main(int argc, char **argv)
 	// Start measuring elapsed time
 	gettimeofday(&start, NULL); // Get start time
 
-	// d = a * b = gf_a[b]
+	// c = a * b = gf_a[b]
 	for (i = 0; i < REPEAT; i++) {
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
 		// This is only for benchmarking purpose

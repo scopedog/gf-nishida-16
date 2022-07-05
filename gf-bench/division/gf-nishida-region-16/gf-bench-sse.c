@@ -16,8 +16,16 @@ main(int argc, char **argv)
 	// Variables
 	int		i, j;
 	struct timeval	start, end;
+	uint8_t		*_b, *_d, *gf_tb;
 	uint16_t	a, *b, *c, *d, *gf_a;
 	uint64_t	*r;
+	__m128i		tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h;
+	__m128i		tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
+
+#if !defined(__SSSE3__)
+	fputs("Error: This program is only for SSE (SSSE3)\n", stderr);
+	exit(1);
+#endif
 
 	// Initialize GF
 	GF16init();
@@ -102,16 +110,6 @@ main(int argc, char **argv)
 	// Don't forget this if you called GF16crtRegTbl()
 	free(gf_a);
 
-#if defined(__SSSE3__) || defined(__AVX2__)
-	// From now on, we need this
-	uint8_t	*gf_tb;
-
-	/*** 4bit multi table region technique by SSSE3 ***/
-
-	uint8_t	*_b, *_d;
-	__m128i	tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h;
-	__m128i	tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
-
 	// Reset d
 	memset(d, 0, SPACE); 
 
@@ -193,5 +191,4 @@ main(int argc, char **argv)
 		putchar('\n');
 		exit(1);
 	}
-#endif
 }
