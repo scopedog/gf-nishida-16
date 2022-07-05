@@ -16,63 +16,35 @@ main(int argc, char **argv)
 	// Variables
 	int		i, j;
 	struct timeval	start, end;
-	uint16_t	a, *b, *c, *d, *gf_a;
+	uint8_t		a, *b, *c, *d, *gf_a;
 	uint64_t	*r;
 
 	// Initialize GF
-	GF16init();
+	GF8init();
 
 	// Allocate b and c
-	if ((b = (uint16_t *)aligned_alloc(64, SPACE * 3)) == NULL) {
+	if ((b = (uint8_t *)aligned_alloc(64, SPACE * 3)) == NULL) {
 		perror("malloc");
 		exit(1);
 	}
-	c = b + (SPACE / sizeof(uint16_t));
-	d = c + (SPACE / sizeof(uint16_t));
+	c = b + SPACE;
+	d = c + SPACE;
 
 	// Initialize random generator
 	init_genrand64(time(NULL));
 
 	// Input random numbers to a, b
-	a = (uint16_t)(genrand64_int64() & 0xffff);
+	a = (uint8_t)(genrand64_int64() & 0xff);
 	r = (uint64_t *)b;
 	for (i = 0; i < SPACE / sizeof(uint64_t); i++) {
 		r[i] = genrand64_int64();
 	}
 
-#if 0
-	/*** Two step table lookup technique ***/
-
-	// Set gf_a
-	gf_a = GF16memL + GF16memIdx[a];
-
-	// Start measuring elapsed time
-	gettimeofday(&start, NULL); // Get start time
-
-	// c = a * b = gf_a[GF16memIdx(b)]]
-	for (i = 0; i < REPEAT; i++) {
-		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
-			// Two step look up
-			// To avoid elimination by cc's -O2 option,
-			// input result into c[j]
-			c[j] = gf_a[GF16memIdx[b[j]]];
-		}
-	}
-
-	// Get end time
-	gettimeofday(&end, NULL);
-
-	// Print result
-	printf("Two step table lookup        : %ld\n",
-		((end.tv_sec * 1000000 + end.tv_usec) -
-		(start.tv_sec * 1000000 + start.tv_usec)));
-#endif
-
 	/*** One step table lookup technique
-	     This will run in L2 cache as gf_a is 128kB ***/
+	     This will run in L1 cache as gf_a is 256B ***/
 
 	// Create region table for a
-	if ((gf_a = GF16crtRegTbl(a, 0)) == NULL) {
+	if ((gf_a = GF8crtRegTbl(a, 0)) == NULL) {
 		exit(1);
 	}
 
@@ -81,11 +53,11 @@ main(int argc, char **argv)
 
 	// c = a * b = gf_a[b]
 	for (i = 0; i < REPEAT; i++) {
-		for (j = 0; j < SPACE / sizeof(uint16_t); j++) {
+		for (j = 0; j < SPACE; j++) {
 			// One step look up
 			c[j] = gf_a[b[j]];
 			// Or use:
-			//c[j] = GF16LkupRT(gf_a, b[j]);
+			//c[j] = GF8LkupRT(gf_a, b[j]);
 		}
 	}
 
@@ -99,7 +71,7 @@ main(int argc, char **argv)
 		(start.tv_sec * 1000000 + start.tv_usec)));
 #endif
 
-	// Don't forget this if you called GF16crtRegTbl()
+	// Don't forget this if you called GF8crtRegTbl()
 	free(gf_a);
 
 #if defined(__SSSE3__) || defined(__AVX2__)
@@ -109,15 +81,14 @@ main(int argc, char **argv)
 	/*** 4bit multi table region technique by SSSE3 ***/
 
 	uint8_t	*_b, *_d;
-	__m128i	tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h;
-	__m128i	tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
+	__m128i	tb_a_l, tb_a_h;
 
 	// Reset d
 	memset(d, 0, SPACE); 
 
 #if defined(_REAL_USE_) // For real use, do this here, not inside loop
-	// Create 4 * 16 byte region tables for a
-	if ((gf_tb = GF16crt4bitRegTbl(a, 0)) == NULL) {
+	// Create 2 * 16 byte region tables for a
+	if ((gf_tb = GF8crt4bitRegTbl(a, 0)) == NULL) {
 		exit(1);
 	}
 #endif
@@ -127,36 +98,26 @@ main(int argc, char **argv)
 
 	// This is a little complicated...
 	for (i = 0; i < REPEAT; i++) {
-		_b = (uint8_t *)b;
-		_d = (uint8_t *)d;
+		_b = b;
+		_d = d;
 
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
 		// This is only for benchmarking purpose
-		// Create 4 * 16 byte region tables for a
-		if ((gf_tb = GF16crt4bitRegTbl(a, 0)) == NULL) {
+		// Create 2 * 16 byte region tables for a
+		if ((gf_tb = GF8crt4bitRegTbl(a, 0)) == NULL) {
 			exit(1);
 		}
 #endif
 
 		// Load tables -- you can do this outside loop
-		tb_a_0_l = _mm_loadu_si128((__m128i *)(gf_tb + 0));
-		tb_a_0_h = _mm_loadu_si128((__m128i *)(gf_tb + 16));
-		tb_a_1_l = _mm_loadu_si128((__m128i *)(gf_tb + 32));
-		tb_a_1_h = _mm_loadu_si128((__m128i *)(gf_tb + 48));
-		tb_a_2_l = _mm_loadu_si128((__m128i *)(gf_tb + 64));
-		tb_a_2_h = _mm_loadu_si128((__m128i *)(gf_tb + 80));
-		tb_a_3_l = _mm_loadu_si128((__m128i *)(gf_tb + 96));
-		tb_a_3_h = _mm_loadu_si128((__m128i *)(gf_tb + 112));
+		tb_a_l = _mm_loadu_si128((__m128i *)(gf_tb + 0));
+		tb_a_h = _mm_loadu_si128((__m128i *)(gf_tb + 16));
 
-		for (j = 0; j < SPACE; j += 32) { // Do every 128 * 2bit
+		for (j = 0; j < SPACE; j += 16) { // Do every 128 * 2bit
 			// Use SIMD lookup
-			GF16lkupSIMD128x2(tb_a_0_l, tb_a_0_h,
-					  tb_a_1_l, tb_a_1_h,
-					  tb_a_2_l, tb_a_2_h,
-					  tb_a_3_l, tb_a_3_h,
-					  _b, _d);
-			_b += 32;
-			_d += 32;
+			GF8lkupSIMD128(tb_a_l, tb_a_h, _b, _d);
+			_b += 16;
+			_d += 16;
 		}
 
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
@@ -170,7 +131,7 @@ main(int argc, char **argv)
 	gettimeofday(&end, NULL);
 
 #if defined(_REAL_USE_) // For real use, do this here, not inside loop
-	// Don't forget this if you called GF16crt4bitRegTbl()
+	// Don't forget this if you called GF1166crt4bitRegTbl()
 	free(gf_tb);
 #endif
 

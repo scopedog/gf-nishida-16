@@ -28,9 +28,9 @@
         
 ****************************************************************************/
 
-/************************************************************
+/***************************************************************************
 	8bit: GF(2^8)
-************************************************************/
+***************************************************************************/
 
 // Variables
 #ifdef _GF_MAIN_
@@ -49,11 +49,115 @@ extern uint8_t	**GF8memDiv;
 
 // Functions
 void	GF8init(void); 
+void	GF8test(void); 
 uint8_t	*GF8crtRegTbl(uint8_t, int);
+uint8_t	*GF8crt4bitRegTbl(uint8_t, int);
+uint8_t	*GF8crt4bitRegTbl256(uint8_t, int);
 
-/************************************************************
+// Inline functions
+#if defined(__AVX2__)
+// Get GF(2^8) result by lookup by AVX -- call every 32 bytes 
+static inline void
+GF8lkupSIMD256(const __m256i tb_a_l, const __m256i tb_a_h,
+	       const uint8_t *input, uint8_t *output)
+{
+	/*** 4bit multi table region technique by AVX ***/
+	__m256i	v_input, input_l, input_h;
+	__m256i	output_l, output_h, v_output, tmp;
+
+	// Load input
+	v_input = _mm256_loadu_si256((__m256i *)input);
+
+	// Retrieve low 4bit of each byte from input
+	tmp = _mm256_set1_epi8(0x0f);
+	input_l = _mm256_and_si256(v_input, tmp);
+
+	// Retrieve high 4bit of each byte from input
+	input_h = _mm256_and_si256(_mm256_srli_epi16(v_input, 4), tmp);
+
+	// Get GF calc results for input_l (low 4bit)
+	output_l = _mm256_shuffle_epi8(tb_a_l, input_l);
+
+	// Get GF calc results for input_h (high 4bit)
+	output_h = _mm256_shuffle_epi8(tb_a_h, input_h);
+
+	// XOR and get result
+	v_output = _mm256_xor_si256(output_l, output_h);
+
+	// Save results
+	_mm256_storeu_si256((__m256i *)output, v_output);
+}
+#endif // __AVX2__
+
+#if defined(__SSSE3__)
+// Get GF(2^8) result by lookup by SSE -- call every 16 bytes 
+static inline void
+GF8lkupSIMD128(const __m128i tb_a_l, const __m128i tb_a_h,
+	       const uint8_t *input, uint8_t *output)
+{
+	/*** 4bit multi table region technique by SSE ***/
+	__m128i	v_input, input_l, input_h;
+	__m128i	output_l, output_h, v_output, tmp;
+
+	// Load input
+	v_input = _mm_loadu_si128((__m128i *)input);
+
+	// Retrieve low 4bit of each byte from input
+	tmp = _mm_set1_epi8(0x0f);
+	input_l = _mm_and_si128(v_input, tmp);
+
+	// Retrieve high 4bit of each byte from input
+	input_h = _mm_and_si128(_mm_srli_epi16(v_input, 4), tmp);
+
+	// Get GF calc results for input_l (low 4bit)
+	output_l = _mm_shuffle_epi8(tb_a_l, input_l);
+
+	// Get GF calc results for input_h (high 4bit)
+	output_h = _mm_shuffle_epi8(tb_a_h, input_h);
+
+	// XOR and get result
+	v_output = _mm_xor_si128(output_l, output_h);
+
+	// Save results
+	_mm_storeu_si128((__m128i *)output, v_output);
+}
+#elif defined(_arm64_) // NEON
+// Get GF(2^8) result by lookup by NEON -- call every 16 bytes 
+static inline void
+GF8lkupSIMD128(const uint8x16_t tb_a_l, const uint8x16_t tb_a_h,
+	       const uint8_t *input, uint8_t *output)
+{
+	/*** 4bit table lookup region technique with NEON ***/
+	uint8x16_t	v_input, input_l, input_h;
+	uint8x16_t	output_l, output_h, v_output, tmp;
+
+	// Load input
+	v_input = vld1q_u8(input);
+
+	// Retrieve low 4bit of each byte from v_input
+	tmp = vdupq_n_u8(0x0f);
+	input_l = vandq_u8(v_input, tmp);
+
+	// Retrieve high 4bit of each byte from v_input
+	input_h = vshrq_n_u8(v_input, 4);
+
+	// Get GF calc results for input_l (low 4bit)
+	output_l = vqtbl1q_u8(tb_a_l, input_l);
+
+	// Get GF calc results for input_h (high 4bit)
+	output_h = vqtbl1q_u8(tb_a_h, input_h);
+
+	// XOR and get result
+	v_output = veorq_s64(output_l, output_h);
+
+	// Save result
+	vst1q_u8(output, v_output);
+}
+#endif // __SSSE3__ || _arm64_
+
+/***************************************************************************
 	16bit: GF(2^16)
-************************************************************/
+***************************************************************************/
 
 // Macros 
 // To achieve fast computation, we do not check if a, b == 0
@@ -62,11 +166,9 @@ uint8_t	*GF8crtRegTbl(uint8_t, int);
 #define	GF16div(a, b)	(GF16memH[GF16memIdx[(a)] - GF16memIdx[(b)]])
 
 #define GF16crtRegTblMul(a)		GF16crtRegTbl(a, 0)
-#define GF16crtRegTblDivL(a)		GF16crtRegTbl(a, 1)
-#define GF16crtRegTblDivR(a)		GF16crtRegTbl(a, 2)
+#define GF16crtRegTblDiv(a)		GF16crtRegTbl(a, 1)
 #define GF16crtSpltRegTblMul(a)		GF16crtSpltRegTbl(a, 0)
-#define GF16crtSpltRegTblDivL(a)	GF16crtSpltRegTbl(a, 1)
-#define GF16crtSpltRegTblDivR(a)	GF16crtSpltRegTbl(a, 2)
+#define GF16crtSpltRegTblDiv(a)		GF16crtSpltRegTbl(a, 1)
 
 #define GF16LkupRT(gf_a, x)		gf_a[(x)]
 #define GF16LkupSRT(gf_a_l, gf_a_h, x)	\
@@ -89,17 +191,14 @@ uint8_t		*GF16crt4bitRegTbl(uint16_t, int);
 uint8_t		*GF16crt4bitRegTbl256(uint16_t, int);
 
 // Inline functions
-#if defined(__SSSE3__) || defined(__AVX2__)
-// Definitions 
-typedef __m128i	v128_t;
-
-// Get GF(2^16) result by lookup by SSE -- call every 32bytes 
+#if defined(__SSSE3__)
+// Get GF(2^16) result by lookup by SSE -- call every 32 bytes 
 static inline void
-GF16lkupSIMD128(const __m128i tb_a_0_l, const __m128i tb_a_0_h,
-		const __m128i tb_a_1_l, const __m128i tb_a_1_h,
-		const __m128i tb_a_2_l, const __m128i tb_a_2_h,
-		const __m128i tb_a_3_l, const __m128i tb_a_3_h,
-		const uint8_t *input, uint8_t *output)
+GF16lkupSIMD128x2(const __m128i tb_a_0_l, const __m128i tb_a_0_h,
+		  const __m128i tb_a_1_l, const __m128i tb_a_1_h,
+		  const __m128i tb_a_2_l, const __m128i tb_a_2_h,
+		  const __m128i tb_a_3_l, const __m128i tb_a_3_h,
+		  const uint8_t *input, uint8_t *output)
 {
 	/*** 4bit table lookup region technique with SSSE3 ***/
 	__m128i	v_0, v_1, input_0, input_1, input_l, input_h;
@@ -171,13 +270,14 @@ GF16lkupSIMD128(const __m128i tb_a_0_l, const __m128i tb_a_0_h,
 	_mm_storeu_si128((__m128i *)(output + 16), output_h);
 }
 
-// Get GF(2^16) result by lookup by AVX -- call every 64bytes 
+#if defined(__AVX2__)
+// Get GF(2^16) result by lookup by AVX -- call every 64 bytes 
 static inline void
-GF16lkupSIMD256(const __m256i tb_a_0_l, const __m256i tb_a_0_h,
-		const __m256i tb_a_1_l, const __m256i tb_a_1_h,
-		const __m256i tb_a_2_l, const __m256i tb_a_2_h,
-		const __m256i tb_a_3_l, const __m256i tb_a_3_h,
-		const uint8_t *input, uint8_t *output)
+GF16lkupSIMD256x2(const __m256i tb_a_0_l, const __m256i tb_a_0_h,
+		  const __m256i tb_a_1_l, const __m256i tb_a_1_h,
+		  const __m256i tb_a_2_l, const __m256i tb_a_2_h,
+		  const __m256i tb_a_3_l, const __m256i tb_a_3_h,
+		  const uint8_t *input, uint8_t *output)
 {
 	/*** 4bit multi table region technique by AVX ***/
 	__m256i	v_0, v_1, input_0, input_1, input_l, input_h;
@@ -235,43 +335,16 @@ GF16lkupSIMD256(const __m256i tb_a_0_l, const __m256i tb_a_0_h,
 	_mm256_storeu_si256((__m256i *)output, output_l);
 	_mm256_storeu_si256((__m256i *)(output + 32), output_h);
 }
-
-// Show each byte of v256_t
-static inline void
-mm_print256_8(const char *str, __m256i var)
-{
-	uint8_t val[32];
-	size_t	len = strlen(str);
-
-	memcpy(val, &var, sizeof(val));
-
-	printf("%s%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x "
-	       "%02x %02x %02x %02x %02x\n",  str,
-		val[15], val[14], val[13], val[12], val[11], val[10], val[9],
-		val[8], val[7], val[6], val[5], val[4], val[3], val[2],
-		val[1], val[0]);
-	for (; len; len--) {
-		putchar(' ');
-	}
-	printf("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x "
-	       "%02x %02x %02x %02x %02x\n",
-		val[31], val[30], val[29], val[28], val[27], val[26], val[25],
-		val[24], val[23], val[22], val[21], val[20], val[19], val[18],
-		val[17], val[16]);
-}
+#endif // __AVX2__
 
 #elif defined(_arm64_) // NEON
-
-// Definitions 
-typedef uint8x16_t	v128_t;
-
-// Get GF(2^16) result by lookup with NEON -- call every 32bytes 
+// Get GF(2^16) result by lookup with NEON -- call every 32 bytes 
 static inline void
-GF16lkupSIMD128(const uint8x16_t tb_a_0_l, const uint8x16_t tb_a_0_h,
-		const uint8x16_t tb_a_1_l, const uint8x16_t tb_a_1_h,
-		const uint8x16_t tb_a_2_l, const uint8x16_t tb_a_2_h,
-		const uint8x16_t tb_a_3_l, const uint8x16_t tb_a_3_h,
-		const uint8_t *input, uint8_t *output)
+GF16lkupSIMD128x2(const uint8x16_t tb_a_0_l, const uint8x16_t tb_a_0_h,
+		  const uint8x16_t tb_a_1_l, const uint8x16_t tb_a_1_h,
+		  const uint8x16_t tb_a_2_l, const uint8x16_t tb_a_2_h,
+		  const uint8x16_t tb_a_3_l, const uint8x16_t tb_a_3_h,
+		  const uint8_t *input, uint8_t *output)
 {
 	/*** 4bit table lookup region technique with NEON ***/
 	uint8x16x2_t	input_v, output_v;
@@ -315,6 +388,19 @@ GF16lkupSIMD128(const uint8x16_t tb_a_0_l, const uint8x16_t tb_a_0_h,
 }
 #endif
 
+
+/***************************************************************************
+	Common
+***************************************************************************/
+
+// Definitions 
+#if defined(__SSSE3__) || defined(__AVX2__)
+typedef __m128i		v128_t;
+#elif defined(_arm64_) // NEON
+typedef uint8x16_t	v128_t;
+#endif
+
+// Inline functions
 #if defined(__SSSE3__) || defined(__AVX2__) || defined(_arm64_)
 // Show each byte of v128_t
 static inline void
@@ -338,5 +424,30 @@ mm_print128_8(const char *str, v128_t var)
 }
 #endif
 
+#if defined(__AVX2__)
+// Show each byte of __m256i
+static inline void
+mm_print256_8(const char *str, __m256i var)
+{
+	uint8_t val[32];
+	size_t	len = strlen(str);
+
+	memcpy(val, &var, sizeof(val));
+
+	printf("%s%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x "
+	       "%02x %02x %02x %02x %02x\n",  str,
+		val[15], val[14], val[13], val[12], val[11], val[10], val[9],
+		val[8], val[7], val[6], val[5], val[4], val[3], val[2],
+		val[1], val[0]);
+	for (; len; len--) {
+		putchar(' ');
+	}
+	printf("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x "
+	       "%02x %02x %02x %02x %02x\n",
+		val[31], val[30], val[29], val[28], val[27], val[26], val[25],
+		val[24], val[23], val[22], val[21], val[20], val[19], val[18],
+		val[17], val[16]);
+}
+#endif
 
 #endif // _GF_H_

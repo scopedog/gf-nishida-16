@@ -150,10 +150,11 @@ main(int argc, char **argv)
 
 		for (j = 0; j < SPACE; j += 32) { // Do every 128 * 2bit
 			// Use SIMD lookup
-			GF16lkupSIMD128(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
-					tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h,
-					_b, _d);
-
+			GF16lkupSIMD128x2(tb_a_0_l, tb_a_0_h,
+					  tb_a_1_l, tb_a_1_h,
+					  tb_a_2_l, tb_a_2_h,
+					  tb_a_3_l, tb_a_3_h,
+					  _b, _d);
 			_b += 32;
 			_d += 32;
 		}

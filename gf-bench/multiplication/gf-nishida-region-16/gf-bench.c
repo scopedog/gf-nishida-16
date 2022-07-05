@@ -184,97 +184,7 @@ main(int argc, char **argv)
 	// From now on, we need this
 	uint8_t	*gf_tb;
 
-#if 0 // SSE
-{
-	/*** 4bit multi table region technique by SSSE3 ***/
-
-	uint8_t	*_b, *_d;
-	__m128i	tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h;
-	__m128i	tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h;
-
-	// Reset d
-	memset(d, 0, SPACE); 
-
-#if defined(_REAL_USE_) // For real use, do this here, not inside loop
-	// Create 4 * 16 byte region tables for a
-	if ((gf_tb = GF16crt4bitRegTbl(a, 0)) == NULL) {
-		exit(1);
-	}
-#endif
-
-	// Start measuring elapsed time
-	gettimeofday(&start, NULL); // Get start time
-
-	// This is a little complicated...
-	for (i = 0; i < REPEAT; i++) {
-		_b = (uint8_t *)b;
-		_d = (uint8_t *)d;
-
-#if !defined(_REAL_USE_) // For real use, do this outside loop, not here
-		// This is only for benchmarking purpose
-		// Create 4 * 16 byte region tables for a
-		if ((gf_tb = GF16crt4bitRegTbl(a, 0)) == NULL) {
-			exit(1);
-		}
-#endif
-
-		// Load tables
-		tb_a_0_l = _mm_loadu_si128((__m128i *)(gf_tb + 0));
-		tb_a_0_h = _mm_loadu_si128((__m128i *)(gf_tb + 16));
-		tb_a_1_l = _mm_loadu_si128((__m128i *)(gf_tb + 32));
-		tb_a_1_h = _mm_loadu_si128((__m128i *)(gf_tb + 48));
-		tb_a_2_l = _mm_loadu_si128((__m128i *)(gf_tb + 64));
-		tb_a_2_h = _mm_loadu_si128((__m128i *)(gf_tb + 80));
-		tb_a_3_l = _mm_loadu_si128((__m128i *)(gf_tb + 96));
-		tb_a_3_h = _mm_loadu_si128((__m128i *)(gf_tb + 112));
-
-		for (j = 0; j < SPACE; j += 32) { // Do every 128 * 2bit
-			// Use SIMD lookup
-			GF16lkupSIMD128(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
-					tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h,
-					_b, _d);
-
-			_b += 32;
-			_d += 32;
-		}
-
-#if !defined(_REAL_USE_) // For real use, do this outside loop, not here
-		// This is only for benchmarking purpose
-		// Don't forget this if you called GF16crt4bitRegTbl()
-		free(gf_tb);
-#endif
-	}
-
-	// Get end time
-	gettimeofday(&end, NULL);
-
-	// Print result
-	printf("One step lookup by SSE       : %ld\n",
-		((end.tv_sec * 1000000 + end.tv_usec) -
-		(start.tv_sec * 1000000 + start.tv_usec)));
-
-#if defined(_REAL_USE_) // For real use, do this here, not inside loop
-	// Don't forget this if you called GF16crt4bitRegTbl()
-	free(gf_tb);
-#endif
-
-	// Compare c and d, they are supposed to be same
-	if (memcmp(c, d, SPACE)) {
-		fprintf(stderr, "Error at SSE: E-mail me "
-			"(nishida at asusa.net) if this happened.\n");
-		for (i = 0; i < 16; i++) {
-			printf("%04x ", c[i]);
-		}
-		putchar('\n');
-		for (i = 0; i < 16; i++) {
-			printf("%04x ", d[i]);
-		}
-		putchar('\n');
-		exit(1);
-	}
-}
-#endif
-
+	// AVX2
 #if defined(__AVX2__)
 {
 	/*** 4bit multi table region technique by AVX2 ***/
@@ -287,7 +197,7 @@ main(int argc, char **argv)
 	memset(d, 0, SPACE); 
 
 #if defined(_REAL_USE_) // For real use, do this here, not inside loop
-	// Create 4 * 16 byte region tables for a
+	// Create 8 * 16 byte region tables for a
 	if ((gf_tb = GF16crt4bitRegTbl256(a, 0)) == NULL) {
 		exit(1);
 	}
@@ -303,7 +213,7 @@ main(int argc, char **argv)
 
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
 		// This is only for benchmarking purpose
-		// Create 4 * 16 byte region tables for a
+		// Create 8 * 16 byte region tables for a
 		if ((gf_tb = GF16crt4bitRegTbl256(a, 0)) == NULL) {
 			exit(1);
 		}
@@ -321,10 +231,11 @@ main(int argc, char **argv)
 
 		for (j = 0; j < SPACE; j += 64) { // Do every 256 * 2bit
 			// Use SIMD lookup
-			GF16lkupSIMD256(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
-					tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h,
-					_b, _d);
-
+			GF16lkupSIMD256x2(tb_a_0_l, tb_a_0_h,
+					  tb_a_1_l, tb_a_1_h,
+					  tb_a_2_l, tb_a_2_h,
+					  tb_a_3_l, tb_a_3_h,
+					  _b, _d);
 			_b += 64;
 			_d += 64;
 		}
@@ -391,7 +302,7 @@ main(int argc, char **argv)
 
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
 		// This is only for benchmarking purpose
-		// Create 4 * 16 byte region tables for a
+		// Create 8 * 16 byte region tables for a
 		if ((gf_tb = GF16crt4bitRegTbl(a, 0)) == NULL) {
 			exit(1);
 		}
@@ -409,10 +320,11 @@ main(int argc, char **argv)
 
 		for (j = 0; j < SPACE; j += 32) { // Do every 128 * 2bit
 			// Use SIMD lookup
-			GF16lkupSIMD128(tb_a_0_l, tb_a_0_h, tb_a_1_l, tb_a_1_h,
-				tb_a_2_l, tb_a_2_h, tb_a_3_l, tb_a_3_h,
-				_b, _d);
-
+			GF16lkupSIMD128x2(tb_a_0_l, tb_a_0_h,
+					  tb_a_1_l, tb_a_1_h,
+					  tb_a_2_l, tb_a_2_h,
+					  tb_a_3_l, tb_a_3_h,
+					  _b, _d);
 			_b += 32;
 			_d += 32;
 		}
@@ -463,7 +375,7 @@ main(int argc, char **argv)
 	memset(d, 0, SPACE); 
 
 #if defined(_REAL_USE_) // For real use, do this here, not inside loop
-	// Create 4 * 16 byte region tables for a
+	// Create 8 * 16 byte region tables for a
 	if ((gf_tb = GF16crt4bitRegTbl(a, 0)) == NULL) {
 		exit(1);
 	}
@@ -484,7 +396,7 @@ main(int argc, char **argv)
 	for (i = 0; i < REPEAT; i++) {
 #if !defined(_REAL_USE_) // For real use, do this outside loop, not here
 		// This is only for benchmarking purpose
-		// Create 4 * 16 byte region tables for a
+		// Create 8 * 16 byte region tables for a
 		if ((gf_tb = GF16crt4bitRegTbl(a, 0)) == NULL) {
 			exit(1);
 		}

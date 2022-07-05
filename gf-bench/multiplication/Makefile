@@ -8,7 +8,7 @@ ARCH	!= ../common/det-arch.sh
 
 MAKE	= make
 
-SUBDIR	= gf-nishida-8 gf-nishida-16 gf-nishida-region-16 \
+SUBDIR	= gf-nishida-8 gf-nishida-16 gf-nishida-region-8 gf-nishida-region-16 \
 	  gf-complete-32 gf-complete-region-32 \
 	  gf-complete-64 gf-complete-region-64 \
  	  gf-complete-region-16 \

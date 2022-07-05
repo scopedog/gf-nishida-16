@@ -197,22 +197,27 @@ GF8crtRegTbl(uint8_t a, int type)
 // Return value:
 //     pointer to lowest table or NULL if failed. Free it later.
 //
+// Usage:
+//     use with GF8lkupSIMD128 in gf.h.
+//     See gf-bench/multiplication/gf-nishida-region-8/gf-bench*.c
+//     for more details.
+//
 uint8_t *
 GF8crt4bitRegTbl(uint8_t a, int type)
 {
 	int	i;
-	uint8_t	*tb_0, *tb_1, *a_addr;
+	uint8_t	*tb_l, *tb_h, *a_addr;
 
 	// Initialize
-	tb_0 = NULL;
+	tb_l = NULL;
 
 	// Allocate table
-	if ((tb_0 = (uint8_t *)aligned_alloc(64, 16 * 2)) == NULL) {
+	if ((tb_l = (uint8_t *)aligned_alloc(64, 16 * 2)) == NULL) {
 		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
 			__func__, strerror(errno));
 		return NULL;
 	}
-	tb_1 = tb_0 + 16;
+	tb_h = tb_l + 16;
 
 	// Input values
 	switch (type) {
@@ -221,8 +226,8 @@ GF8crt4bitRegTbl(uint8_t a, int type)
 
 		// Input values
 		for (i = 0; i < 16; i++) {
-			tb_0[i] = a_addr[i];
-			tb_1[i] = a_addr[i << 4];
+			tb_l[i] = a_addr[i];
+			tb_h[i] = a_addr[i << 4];
 		}
 		break;
 
@@ -231,8 +236,8 @@ GF8crt4bitRegTbl(uint8_t a, int type)
 
 		// Input values
 		for (i = 0; i < 16; i++) {
-			tb_0[i] = a_addr[i];
-			tb_1[i] = a_addr[i << 4];
+			tb_l[i] = a_addr[i];
+			tb_h[i] = a_addr[i << 4];
 		}
 		break;
 
@@ -240,11 +245,11 @@ GF8crt4bitRegTbl(uint8_t a, int type)
 		fprintf(stderr, "Error: %s: Illegal second argument value: %d "
 			"(value must be 0, 1, or 2)\n",
 			__func__, type);
-		free(tb_0);
+		free(tb_l);
 		return NULL;
 	}
 
-	return tb_0;
+	return tb_l;
 }
 
 // Same as GF8crt4bitRegTbl() but for 256bit SIMD like AVX
@@ -257,22 +262,27 @@ GF8crt4bitRegTbl(uint8_t a, int type)
 // Return value:
 //     pointer to lowest table or NULL if failed. Free it later.
 //
+// Usage:
+//     use with GF8lkupSIMD128 in gf.h.
+//     See gf-bench/multiplication/gf-nishida-region-8/gf-bench*.c
+//     for more details.
+//
 uint8_t *
 GF8crt4bitRegTbl256(uint8_t a, int type)
 {
 	int	i, i_16;
-	uint8_t	*tb_0, *tb_1, *a_addr;
+	uint8_t	*tb_l, *tb_h, *a_addr;
 
 	// Initialize
-	tb_0 = NULL;
+	tb_l = NULL;
 
 	// Allocate table
-	if ((tb_0 = (uint8_t *)aligned_alloc(64, 32 * 2)) == NULL) {
+	if ((tb_l = (uint8_t *)aligned_alloc(64, 32 * 2)) == NULL) {
 		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
 			__func__, strerror(errno));
 		return NULL;
 	}
-	tb_1 = tb_0 + 32;
+	tb_h = tb_l + 32;
 
 	// Input values
 	switch (type) {
@@ -281,8 +291,8 @@ GF8crt4bitRegTbl256(uint8_t a, int type)
 
 		// Input values
 		for (i = 0, i_16 = 16; i < 16; i++, i_16++) {
-			tb_0[i] = tb_0[i_16] = a_addr[i];
-			tb_1[i] = tb_1[i_16] = a_addr[i << 4];
+			tb_l[i] = tb_l[i_16] = a_addr[i];
+			tb_h[i] = tb_h[i_16] = a_addr[i << 4];
 		}
 		break;
 
@@ -291,8 +301,8 @@ GF8crt4bitRegTbl256(uint8_t a, int type)
 
 		// Input values
 		for (i = 0, i_16 = 16; i < 16; i++, i_16++) {
-			tb_0[i] = tb_0[i_16] = a_addr[i];
-			tb_1[i] = tb_1[i_16] = a_addr[i << 4];
+			tb_l[i] = tb_l[i_16] = a_addr[i];
+			tb_h[i] = tb_h[i_16] = a_addr[i << 4];
 		}
 		break;
 
@@ -300,11 +310,11 @@ GF8crt4bitRegTbl256(uint8_t a, int type)
 		fprintf(stderr, "Error: %s: Illegal second argument value: %d "
 			"(value must be 0, 1, or 2)\n",
 			__func__, type);
-		free(tb_0);
+		free(tb_l);
 		return NULL;
 	}
 
-	return tb_0;
+	return tb_l;
 }
 
 // Test GF8
@@ -333,6 +343,19 @@ GF8test(void)
 
 	a = 0;
 	do {
+		// Test one step lookup region multiplication
+		tbl_0 = GF8crtRegTbl(a, 0);
+		for (i = 0; i < 256; i++) {
+			d = tbl_0[i];
+			if (d != GF8mul(a, i)) {
+				printf("GF8test: %d != GF8mul(%d, %d)\n",
+					d, a, i);
+				exit(1);
+			}
+		}
+		free(tbl_0);
+
+		// Test 4bit split table lookup region multiplication
 		tbl_0 = GF8crt4bitRegTbl(a, 0);
 		tbl_1 = tbl_0 + 16;
 		for (i = 0; i < 256; i++) {
@@ -345,7 +368,21 @@ GF8test(void)
 		}
 		free(tbl_0);
 
+		// Division
 		if (a) {
+			// Test one step lookup region division
+			tbl_0 = GF8crtRegTbl(a, 1);
+			for (i = 0; i < 256; i++) {
+				d = tbl_0[i];
+				if (d != GF8div(i, a)) {
+					printf("GF8test: %d != GF8div(%d, %d)"
+					       "\n", d, i, a);
+					exit(1);
+				}
+			}
+			free(tbl_0);
+
+			// Test 4bit split table lookup region division
 			tbl_0 = GF8crt4bitRegTbl(a, 1);
 			tbl_1 = tbl_0 + 16;
 			for (i = 0; i < 256; i++) {
@@ -599,6 +636,11 @@ GF16crtSpltRegTbl(uint16_t a, int type)
 // Return value:
 //     pointer to lowest table or NULL if failed. Free it later.
 //
+// Usage:
+//     use with GF16lkupSIMD128x2 in gf.h.
+//     See gf-bench/multiplication/gf-nishida-region-16/gf-bench*.c
+//     for more details.
+//
 uint8_t *
 GF16crt4bitRegTbl(uint16_t a, int type)
 {
@@ -686,6 +728,11 @@ GF16crt4bitRegTbl(uint16_t a, int type)
 //
 // Return value:
 //     pointer to lowest table or NULL if failed. Free it later.
+//
+// Usage:
+//     use with GF16lkupSIMD256x2 in gf.h.
+//     See gf-bench/multiplication/gf-nishida-region-16/gf-bench*.c
+//     for more details.
 //
 uint8_t *
 GF16crt4bitRegTbl256(uint16_t a, int type)
