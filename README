@@ -1,17 +1,20 @@
 This library provides simple and fast arithmetic functions (macros) in GF(2^16)
-based on table lookup.
+and GF(2^8) based on table lookup.
 The only programs you need are gf.c and gf.h; copy them to your directory and
 compile your programs with them.
 
-Initially, call
+For GF(2^16), call
     GF16init();
-and thereafter call other functions (macros) such as GF16mul(), GF16div().
+first and then call other functions (macros) such as GF16mul(), GF16div().
+Similarly for GF(2^8), call
+    GF8init();
+first and call other functions (macros) such as GF8mul(), GF18iv().
 
 Some techniques to accelerate region calculation such as:
     for (i = 0; i < N; i++)
         c[i] = a * b[i]; // Static coefficient * region of data (array)
 are also included.
-Please see gf-bench/multiplication/gf-nishida-region-16/gf-bench.c for
+Please see gf-bench/multiplication/gf-nishida-region-{16,8}/gf-bench.c for
 the code examples.
 
 All the deitais and benchmark results are described in our technical papers
