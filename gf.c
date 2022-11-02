@@ -157,7 +157,7 @@ GF8crtRegTbl(uint8_t a, int type)
 
 	// Allocate table
 	if ((table = (uint8_t *)
-			aligned_alloc(64, GF8_SIZE)) == NULL) {
+			aligned_alloc(32, GF8_SIZE)) == NULL) {
 		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
 			__func__, strerror(errno));
 		return NULL;	
@@ -212,7 +212,7 @@ GF8crt4bitRegTbl(uint8_t a, int type)
 	tb_l = NULL;
 
 	// Allocate table
-	if ((tb_l = (uint8_t *)aligned_alloc(64, 16 * 2)) == NULL) {
+	if ((tb_l = (uint8_t *)aligned_alloc(32, 16 * 2)) == NULL) {
 		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
 			__func__, strerror(errno));
 		return NULL;
@@ -277,7 +277,7 @@ GF8crt4bitRegTbl256(uint8_t a, int type)
 	tb_l = NULL;
 
 	// Allocate table
-	if ((tb_l = (uint8_t *)aligned_alloc(64, 32 * 2)) == NULL) {
+	if ((tb_l = (uint8_t *)aligned_alloc(32, 32 * 2)) == NULL) {
 		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
 			__func__, strerror(errno));
 		return NULL;
@@ -293,6 +293,10 @@ GF8crt4bitRegTbl256(uint8_t a, int type)
 		for (i = 0, i_16 = 16; i < 16; i++, i_16++) {
 			tb_l[i] = tb_l[i_16] = a_addr[i];
 			tb_h[i] = tb_h[i_16] = a_addr[i << 4];
+/*
+			tb_l[i] = tb_l[i_16] = GF8mul(a, i);
+			tb_h[i] = tb_h[i_16] = GF8mul(a, i << 4);
+*/
 		}
 		break;
 
@@ -332,8 +336,7 @@ GF8test(void)
 			d = GF8div(c, b);
 
 			if (d != i) {
-				printf("GF8test: d (%d) != i (%d)\n",
-					d, i);
+				printf("GF8test: d (%d) != i (%d)\n", d, i);
 				printf("i = %d, j = %d, c = %d, d = %d\n",
 					i, j, c, d);
 				exit(1);
@@ -496,7 +499,7 @@ GF16crtRegTbl(uint16_t a, int type)
 
 	// Allocate table
 	if ((table = (uint16_t *)
-			aligned_alloc(64, GF16_SIZE * sizeof(uint16_t)))
+			aligned_alloc(32, GF16_SIZE * sizeof(uint16_t)))
 				== NULL) {
 		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
 			__func__, strerror(errno));
@@ -581,7 +584,7 @@ GF16crtSpltRegTbl(uint16_t a, int type)
 
 	// Allocate table
 	if ((tb_l = (uint16_t *)
-			aligned_alloc(64, 256 * sizeof(uint16_t) * 2))
+			aligned_alloc(32, 256 * sizeof(uint16_t) * 2))
 				== NULL) {
 		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
 			__func__, strerror(errno));
@@ -653,7 +656,7 @@ GF16crt4bitRegTbl(uint16_t a, int type)
 	tb_0_l = NULL;
 
 	// Allocate table
-	if ((tb_0_l = (uint8_t *)aligned_alloc(64, 16 * 8)) == NULL) {
+	if ((tb_0_l = (uint8_t *)aligned_alloc(32, 16 * 8)) == NULL) {
 		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
 			__func__, strerror(errno));
 		return NULL;
@@ -746,7 +749,7 @@ GF16crt4bitRegTbl256(uint16_t a, int type)
 	tb_0_l = NULL;
 
 	// Allocate table
-	if ((tb_0_l = (uint8_t *)aligned_alloc(64, 256)) == NULL) {
+	if ((tb_0_l = (uint8_t *)aligned_alloc(32, 256)) == NULL) {
 		fprintf(stderr, "Error: %s: aligned_alloc: %s\n",
 			__func__, strerror(errno));
 		return NULL;
