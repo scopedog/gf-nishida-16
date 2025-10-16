@@ -56,12 +56,12 @@ uint8_t	*GF8crt4bitRegTbl256(uint8_t, int);
 
 // Inline functions
 #if defined(__AVX2__)
-// Get GF(2^8) result by lookup by AVX -- call every 32 bytes 
+// Get GF(2^8) result by lookup with AVX -- call every 32 bytes 
 static inline void
 GF8lkupSIMD256(const __m256i tb_a_l, const __m256i tb_a_h,
 	       const uint8_t *input, uint8_t *output)
 {
-	/*** 4bit multi table region technique by AVX ***/
+	/*** 4bit multi table region technique with AVX ***/
 	__m256i	v_input, input_l, input_h;
 	__m256i	output_l, output_h, v_output, tmp;
 
@@ -271,7 +271,7 @@ GF16lkupSIMD128x2(const __m128i tb_a_0_l, const __m128i tb_a_0_h,
 }
 
 #if defined(__AVX2__)
-// Get GF(2^16) result by lookup by AVX -- call every 64 bytes 
+// Get GF(2^16) result by lookup with AVX -- call every 64 bytes 
 static inline void
 GF16lkupSIMD256x2(const __m256i tb_a_0_l, const __m256i tb_a_0_h,
 		  const __m256i tb_a_1_l, const __m256i tb_a_1_h,
@@ -279,7 +279,7 @@ GF16lkupSIMD256x2(const __m256i tb_a_0_l, const __m256i tb_a_0_h,
 		  const __m256i tb_a_3_l, const __m256i tb_a_3_h,
 		  const uint8_t *input, uint8_t *output)
 {
-	/*** 4bit multi table region technique by AVX ***/
+	/*** 4bit multi table region technique with AVX ***/
 	__m256i	v_0, v_1, input_0, input_1, input_l, input_h;
 	__m256i	input_l_l, input_l_h, input_h_l, input_h_h;
 	__m256i	output_l, output_h, tmp;
