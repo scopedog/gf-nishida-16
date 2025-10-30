@@ -23,7 +23,7 @@ main(int argc, char **argv)
 	// Initialize GF
 	gf_init_easy(&gf, 64); // 64bit
 
-	// Allocate b and c
+	// Allocate b, c
 	if ((b = (uint64_t *)aligned_alloc(64, SPACE * 2)) == NULL) {
 		perror("malloc");
 		exit(1);

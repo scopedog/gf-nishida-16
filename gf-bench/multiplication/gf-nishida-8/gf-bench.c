@@ -41,7 +41,7 @@ main(int argc, char **argv)
 	// Start measuring elapsed time
 	gettimeofday(&start, NULL); // Get start time
 
-	// Use GF16mul to calculate a * b[j]
+	// Use GF8mul to calculate a * b[j]
 	for (i = 0; i < REPEAT; i++) {
 		for (j = 0; j < SPACE / sizeof(uint8_t); j++) {
 			// Calculate in GF

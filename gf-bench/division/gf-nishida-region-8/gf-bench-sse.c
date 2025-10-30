@@ -28,7 +28,7 @@ main(int argc, char **argv)
 	// Initialize GF
 	GF8init();
 
-	// Allocate b and c
+	// Allocate b, c, d
 	if ((b = (uint8_t *)aligned_alloc(64, SPACE * 3)) == NULL) {
 		perror("malloc");
 		exit(1);
